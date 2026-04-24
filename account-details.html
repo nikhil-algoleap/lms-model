@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Details - Algoleap LMS</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .account-logo {
+            width: 80px; height: 80px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 32px; color: white;
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-icon"></div>
+                <div class="brand-text"><h2>algoleap</h2><span>LMS V1.0</span></div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Workspace</div>
+                <a href="dashboard.html" class="nav-item">Dashboard</a>
+                <a href="accounts.html" class="nav-item active">Accounts</a>
+                <a href="contacts.html" class="nav-item">Contacts</a>
+                <a href="leads.html" class="nav-item">Leads</a>
+            </nav>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-nav">
+                <div class="breadcrumbs">Accounts / <span id="breadcrumb-name">Loading...</span></div>
+                <div class="top-actions">
+                    <button class="btn btn-primary">Edit Account</button>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="account-profile-header" style="display: flex; gap: 24px; padding: 24px; background: white; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 24px;">
+                    <div id="account-logo" class="account-logo">?</div>
+                    <div class="account-summary">
+                        <h1 id="account-name-heading" style="font-family: var(--font-serif); margin-bottom: 4px;">Loading Account...</h1>
+                        <p id="account-meta" class="text-muted">Enterprise · Global · Strategic Account</p>
+                    </div>
+                </div>
+
+                <!-- Account Info Cards -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px;">
+                    <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Annual Revenue</span>
+                        <div id="val-acc-revenue" style="font-size: 1.25rem; font-weight: 700; margin-top: 4px;">-</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Employees</span>
+                        <div id="val-acc-employees" style="font-size: 1.25rem; font-weight: 700; margin-top: 4px;">-</div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Ownership</span>
+                        <div id="val-acc-ownership" style="font-size: 1.25rem; font-weight: 700; margin-top: 4px;">-</div>
+                    </div>
+                </div>
+
+                <div class="tabs-container">
+                    <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 32px;">
+                        <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 1rem; color: #1e293b;">Account Contact & Address</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <div>
+                                <span style="font-size: 0.85rem; color: #64748b;">HQ Address</span>
+                                <p id="val-acc-address" style="margin: 4px 0 0; color: #1e293b;">-</p>
+                            </div>
+                            <div>
+                                <span style="font-size: 0.85rem; color: #64748b;">Industry</span>
+                                <p id="val-acc-industry" style="margin: 4px 0 0; color: #1e293b;">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tabs-header" style="display: flex; gap: 32px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px;">
+                        <button class="tab-btn active" style="padding: 12px 0; border-bottom: 2px solid var(--blue-primary); background: none; border-top: none; border-left: none; border-right: none; font-weight: 600;">Contacts</button>
+                    </div>
+
+                    <div class="leads-table-container">
+                        <table class="leads-table">
+                            <thead>
+                                <tr><th>Name</th><th>Designation</th><th>Email</th><th>Department</th><th>Status</th></tr>
+                            </thead>
+                            <tbody id="contacts-tbody">
+                                <tr><td colspan="5" style="text-align:center; padding:40px;">Loading contacts...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="section-title" style="margin: 40px 0 16px;">Active Leads</div>
+                    <div class="leads-table-container">
+                        <table class="leads-table">
+                            <thead>
+                                <tr><th>Lead Title</th><th>Status</th><th>Value</th><th>Owner</th></tr>
+                            </thead>
+                            <tbody id="leads-tbody">
+                                <tr><td colspan="4" style="text-align:center; padding:40px;">Loading leads...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            const MOCK_DATA = {
+                'dhl': {
+                    contacts: [['Marcus Weber', 'VP Digital', 'marcus@dhl.com', 'Operations', 'Decision Maker'], ['Sarah Hoffmann', 'Director IT', 'sarah@dhl.com', 'IT', 'Champion']],
+                    leads: [['ServiceNow AI Transformation', 'Proposal', '$420,000', 'Prashanth'], ['Global Logistics Hub Upgrade', 'Qualified', '$1.2M', 'Vikram']],
+                    revenue: '$81.7 Billion',
+                    employees: '600,000+',
+                    ownership: 'Public (DPA)',
+                    address: 'Charles-de-Gaulle-Straße 20, 53113 Bonn, Germany',
+                    industry: 'Logistics & Supply Chain',
+                    color: '#FFCC00', textColor: '#D40511'
+                },
+                'thomson': {
+                    contacts: [['Jessica Tan', 'Chief Data Officer', 'j.tan@tr.com', 'Data Services', 'Decision Maker']],
+                    leads: [['NextGen Data Analytics POD', 'Negotiation', '$850k', 'Gopi']],
+                    revenue: '$6.3 Billion',
+                    employees: '25,000',
+                    ownership: 'Public (TRI)',
+                    address: '610 Opperman Drive, Eagan, MN 55123, USA',
+                    industry: 'Mass Media & Information Service',
+                    color: '#ff8000', textColor: 'white'
+                }
+            };
+
+            function init() {
+                const params = new URLSearchParams(window.location.search);
+                const name = params.get('name') || 'DHL Group';
+                const key = name.toLowerCase().includes('dhl') ? 'dhl' : (name.toLowerCase().includes('thomson') ? 'thomson' : 'other');
+
+                document.title = name + " - Account Details";
+                document.getElementById('breadcrumb-name').innerText = name;
+                document.getElementById('account-name-heading').innerText = name;
+                
+                const logo = document.getElementById('account-logo');
+                logo.innerText = name.substring(0, 2).toUpperCase();
+                
+                if (MOCK_DATA[key]) {
+                    const data = MOCK_DATA[key];
+                    logo.style.background = data.color;
+                    logo.style.color = data.textColor;
+                    
+                    document.getElementById('val-acc-revenue').innerText = data.revenue;
+                    document.getElementById('val-acc-employees').innerText = data.employees;
+                    document.getElementById('val-acc-ownership').innerText = data.ownership;
+                    document.getElementById('val-acc-address').innerText = data.address;
+                    document.getElementById('val-acc-industry').innerText = data.industry;
+
+                    document.getElementById('contacts-tbody').innerHTML = data.contacts.map(c => `<tr><td>${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td><td>${c[3]}</td><td><span class="badge proposal">${c[4]}</span></td></tr>`).join('');
+                    document.getElementById('leads-tbody').innerHTML = data.leads.map(l => `<tr><td>${l[0]}</td><td><span class="badge qualified">${l[1]}</span></td><td>${l[2]}</td><td>${l[3]}</td></tr>`).join('');
+                } else {
+                    logo.style.background = '#3b82f6'; logo.style.color = 'white';
+                    document.getElementById('val-acc-revenue').innerText = '$0';
+                    document.getElementById('val-acc-employees').innerText = '-';
+                    document.getElementById('val-acc-ownership').innerText = 'Private';
+                    document.getElementById('val-acc-address').innerText = 'No address on file';
+                    document.getElementById('val-acc-industry').innerText = 'Other';
+
+                    const emptyRow = `<tr><td colspan="5" style="text-align:center; padding:40px; color:#64748b;">No data available for ${name}</td></tr>`;
+                    document.getElementById('contacts-tbody').innerHTML = emptyRow;
+                    document.getElementById('leads-tbody').innerHTML = emptyRow;
+                }
+            }
+
+            window.onload = init;
+        })();
+    </script>
+</body>
+</html>

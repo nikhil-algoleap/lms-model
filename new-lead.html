@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create New Lead - Algoleap LMS">
+    <title>Create New Lead - Algoleap LMS</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/store.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-icon"></div>
+                <div class="brand-text">
+                    <h2>algoleap</h2>
+                    <span>LMS V1.0</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Workspace</div>
+                <a href="dashboard.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="accounts.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Accounts
+                </a>
+                <a href="contacts.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Contacts
+                </a>
+                <a href="leads.html" class="nav-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Leads
+                </a>
+
+                <div class="nav-section-title">Admin</div>
+                <a href="users-roles.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Users & Roles
+                </a>
+                <a href="permissions.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Permissions
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="avatar">G</div>
+                <div class="user-info">
+                    <div class="name">Gopi</div>
+                    <div class="role">Client Manager</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <main class="main-wrapper">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="breadcrumbs">
+                    Algoleap LMS / <span>New Lead</span>
+                </div>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search accounts, contacts, leads...">
+                        <span class="shortcut">⌘K</span>
+                    </div>
+                    <button class="icon-btn" aria-label="Notifications">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </button>
+                    <button class="icon-btn" aria-label="Help">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <div class="form-header" style="margin-bottom: 32px;">
+                    <div>
+                        <h1>Create new lead</h1>
+                        <p>Capture a qualified opportunity and assign it to a practice leader</p>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <form class="form-grid">
+                        <!-- Lead Title -->
+                        <div class="form-group full-width">
+                            <label for="lead-title">Lead title <span class="required">*</span></label>
+                            <input type="text" id="lead-title" class="form-control" placeholder="e.g., DHL · ServiceNow AI Transformation">
+                            <div class="form-hint">Suggested format: Account · Project or outcome</div>
+                        </div>
+
+                        <!-- Account -->
+                        <div class="form-group">
+                            <label for="account">Account <span class="required">*</span></label>
+                            <select id="account" class="form-control">
+                                <option value="" selected disabled>Loading accounts...</option>
+                            </select>
+                        </div>
+
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const select = document.getElementById('account');
+                                if (!select) return;
+                                const accounts = LMS_STORE.getAccounts();
+                                select.innerHTML = '<option value="" selected disabled>Select account...</option>';
+                                accounts.forEach(acc => {
+                                    const opt = document.createElement('option');
+                                    opt.value = acc; opt.textContent = acc;
+                                    select.appendChild(opt);
+                                });
+                            });
+                        </script>
+
+                        <!-- Primary Contact -->
+                        <div class="form-group">
+                            <label for="contact">Primary contact</label>
+                            <select id="contact" class="form-control">
+                                <option value="" selected disabled>Select contact...</option>
+                                <option>Marcus Weber (DHL)</option>
+                                <option>Sarah Hoffmann (DHL)</option>
+                                <option>Jessica Tan (Thomson Reuters)</option>
+                            </select>
+                        </div>
+
+                        <!-- Service Line -->
+                        <div class="form-group">
+                            <label for="service-line">Service line <span class="required">*</span></label>
+                            <select id="service-line" class="form-control">
+                                <option value="" selected disabled>Select service line...</option>
+                                <option>AI & Automation</option>
+                                <option>Product Engineering</option>
+                                <option>Service Management</option>
+                                <option>Cloud Migration</option>
+                                <option>Cyber Security</option>
+                                <option>Data Analytics</option>
+                                <option>Digital Experience</option>
+                                <option>Enterprise Resource Planning</option>
+                                <option>Managed Services</option>
+                                <option>Business Transformation</option>
+                                <option>Sustainability & ESG</option>
+                            </select>
+                        </div>
+
+                        <!-- Practice Area -->
+                        <div class="form-group">
+                            <label for="practice-area">Practice area</label>
+                            <select id="practice-area" class="form-control">
+                                <option value="" selected disabled>Select practice area...</option>
+                                <option>SRE-observability</option>
+                                <option>Salesforce</option>
+                                <option>Microsoft Cloud</option>
+                                <option>Google Cloud</option>
+                                <option>AWS</option>
+                                <option>ERP</option>
+                                <option>Oracle</option>
+                                <option>Adobe</option>
+                                <option>Data practice</option>
+                                <option>Databricks</option>
+                                <option>Workday</option>
+                                <option>Pega</option>
+                                <option>Supply Chain</option>
+                            </select>
+                        </div>
+
+                        <!-- Delivery Format -->
+                        <div class="form-group">
+                            <label for="delivery-format">Delivery format</label>
+                            <select id="delivery-format" class="form-control">
+                                <option>POD-based Engineering & Delivery</option>
+                                <option>Studio MVP Enhancement</option>
+                                <option>TM- Staff Augmentation</option>
+                                <option>Project engagement</option>
+                                <option>Support services</option>
+                                <option>Manager service</option>
+                                <option>Managed Services</option>
+                            </select>
+                        </div>
+
+
+
+                        <!-- Estimated Revenue -->
+                        <div class="form-group">
+                            <label for="revenue">Estimated revenue (USD) <span class="required">*</span></label>
+                            <input type="number" id="revenue" class="form-control" placeholder="250000">
+                        </div>
+
+                        <!-- Estimated Duration -->
+                        <div class="form-group">
+                            <label for="duration">Estimated duration (months)</label>
+                            <input type="number" id="duration" class="form-control" placeholder="6">
+                        </div>
+
+                        <!-- Expected Start Date -->
+                        <div class="form-group">
+                            <label for="start-date">Expected start date</label>
+                            <input type="date" id="start-date" class="form-control" value="2026-05-01">
+                        </div>
+
+                        <!-- Probability -->
+                        <div class="form-group">
+                            <label for="probability">Probability (%)</label>
+                            <input type="number" id="probability" class="form-control" placeholder="20">
+                        </div>
+
+                        <!-- Source -->
+                        <div class="form-group">
+                            <label for="source">Source</label>
+                            <select id="source" class="form-control">
+                                <option>Existing Client</option>
+                                <option>Inbound Lead</option>
+                                <option>Referral</option>
+                                <option>Conference</option>
+                                <option>Strategic Alliance</option>
+                            </select>
+                        </div>
+
+                        <!-- Stage -->
+                        <div class="form-group">
+                            <label for="stage">Stage</label>
+                            <select id="stage" class="form-control">
+                                <option>New</option>
+                                <option>Qualification</option>
+                                <option>Proposal</option>
+                                <option>Negotiation</option>
+                                <option>Closed Won</option>
+                            </select>
+                        </div>
+
+                        <!-- Geography -->
+                        <div class="form-group">
+                            <label for="geography">Geography</label>
+                            <select id="geography" class="form-control">
+                                <option>Central Europe</option>
+                                <option>North America</option>
+                                <option>United Kingdom</option>
+                                <option>Asia Pacific</option>
+                                <option>Middle East</option>
+                            </select>
+                        </div>
+
+                        <!-- Practice Leader -->
+                        <div class="form-group">
+                            <label for="practice-leader">Practice Leader</label>
+                            <select id="practice-leader" class="form-control">
+                                <option>Prashanth</option>
+                                <option>Vikram Iyer</option>
+                                <option>Rajesh Kumar</option>
+                                <option>Sarah Jenkins</option>
+                            </select>
+                        </div>
+
+                        <!-- Owner -->
+                        <div class="form-group">
+                            <label for="owner">Owner (Client Manager)</label>
+                            <select id="owner" class="form-control">
+                                <option selected>Gopi (me)</option>
+                                <option>Amit Sharma</option>
+                                <option>Gopi</option>
+                            </select>
+                        </div>
+
+                        <!-- Description / notes -->
+                        <div class="form-group full-width">
+                            <label for="notes">Description / notes</label>
+                            <textarea id="notes" class="form-control" placeholder="Background, opportunity context, competitive landscape, stakeholders..."></textarea>
+                        </div>
+
+                        <!-- Attach files -->
+                        <div class="form-group full-width">
+                            <label>Attach files</label>
+                            <div class="dropzone">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <div class="primary-text">Drag & drop or click to upload</div>
+                                <div class="secondary-text">SOWs, proposals, MSAs, pricing sheets &middot; up to 10 MB each</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions Bottom -->
+                        <div class="form-actions-bottom" style="display: flex; gap: 12px; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 24px; justify-content: flex-end;">
+                            <button type="button" class="btn-cancel" onclick="window.history.back()" style="background: white; border: 1px solid #e2e8f0; padding: 10px 24px; border-radius: 8px; font-weight: 500; color: #1e293b; cursor: pointer;">Cancel</button>
+                            <button type="button" class="btn-save" onclick="location.href='leads.html'" style="background: #3e8e41; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save lead</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Toast -->
+    <div class="floating-toast">
+        <div class="toast-dot"></div>
+        Prototype &middot; Click sidebar to explore
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,683 @@
+ALGOLEAP
+Lead Management System
+Technical Specification · v1.0
+A beginner-friendly, step-by-step build guide
+for a React + Node.js + PostgreSQL developer
+https://claude.ai/public/artifacts/2e923734-f347-41d2-a021-cfabf217f8da
+Privileged and Confidential · 2026
+Table of Contents
+1.  Overview & Goals
+2.  Scope — What's In, What's Out (v1)
+3.  User Roles & Personas
+4.  Tech Stack & Why We Picked It
+5.  Project Folder Structure
+6.  Environment Setup (Step by Step)
+7.  Database Design
+8.  Configurable Permissions (RBAC) Design
+9.  API Design — Endpoints & Contracts
+10. Frontend Architecture & Routes
+11. File Uploads (Attachments)
+12. Email Notifications
+13. Lead Lifecycle & State Machine
+14. Security Basics
+15. Build Order — A Week-by-Week Plan
+16. Deployment Guide (Free Tier)
+17. Testing Checklist
+18. Appendix A — Seed Data
+19. Appendix B — Glossary
+1. Overview & Goals
+The Algoleap Lead Management System (LMS) is an internal tool for the sales and client-facing teams. It helps them capture new client opportunities, track them through a sales pipeline, and collaborate across the Executive, Practice Leader, Client Manager, Team Member, and Administrator roles.
+This document is written for a developer who is new to full-stack development. It assumes you know basic JavaScript and have used React or Node.js in a tutorial before, but have not yet built and deployed a real application. Every section explains not just what to do, but why.
+1.1 Primary Goals of v1
+Replace ad-hoc spreadsheets and email threads with a single source of truth for leads.
+Allow Executives, Practice Leaders, and Client Managers to create and manage leads.
+Store structured information about Accounts and Contacts tied to those leads.
+Support file attachments (proposals, SOWs, MSAs) on each lead.
+Send email notifications when leads are assigned or their stage changes.
+Allow lead assignment and reassignment between team members.
+Provide a configurable permissions system so administrators can tune access without code changes.
+1.2 Non-Goals for v1
+These are good ideas, but they're explicitly out of scope for the first release. Keep the MVP small so you can actually ship it.
+Public website, customer-facing portal, or external form submissions.
+Sales forecasting, AI scoring, or ML recommendations (can be added post-v1).
+Mobile app — the web app is responsive, but no native iOS/Android.
+Deep integrations with external CRMs like Salesforce (import/export via CSV only in v1).
+SSO (Google/Microsoft) — we start with email + password; SSO is a v2 task.
+1.3 Expected Scale
+About 25 active internal users. A small team. This matters because it means:
+PostgreSQL free tier will handle the database comfortably.
+Vercel + Render free tiers are sufficient for hosting.
+You do not need Redis, message queues, or microservices.
+Simplicity and clarity matter more than scale optimizations.
+2. Scope — What's In, What's Out (v1)
+A clear scope table keeps everyone aligned. When someone asks 'can you add X', compare their ask to this list first.
+Capability
+In v1?
+Notes
+Login with email + password
+Yes
+Basic auth, no SSO yet
+Accounts: list, create, edit, view details
+Yes
+With contacts and leads
+Contacts: list, create, edit, tied to Account
+Yes
+Many contacts per account
+Leads: full CRUD, kanban + table view
+Yes
+6 stages
+Lead assignment / reassignment
+Yes
+With email notification
+File attachments on leads
+Yes
+PDF / Word / Excel, max 10 MB
+Email notifications
+Yes
+On assign + stage change
+Users and Role management
+Yes
+5 default roles, create custom
+Configurable permissions matrix
+Yes
+Admin toggle per role
+Audit log of lead changes
+No (v2)
+Good for later
+Dashboard with charts
+No (v2)
+Simple summary in v1 only
+SSO login (Google / MS)
+No (v2)
+Add after v1 is stable
+CSV import / export
+No (v2)
+Nice-to-have
+Mobile native app
+No
+Use responsive web
+3. User Roles & Personas
+Five roles are shipped by default. The permissions attached to each role are fully configurable — see Section 8.
+3.1 Executive
+A senior leader who views the full pipeline across all practices and occasionally creates strategic leads. Example: Rahul Desai, Head of Sales. Primary need: visibility across everything.
+3.2 Practice Leader
+Owns a service line (e.g., AI & Automation, Service Management). Reviews and edits all leads within their practice, assigns team members, and signs off on proposals. Example: Anita Krishnan, Head of AI & Automation.
+3.3 Client Manager
+The most active user type. Creates and manages leads for the accounts they own. Uploads SOWs and pricing documents. Moves leads through stages. Example: Priya Menon.
+3.4 Team Member
+Delivery-side team who needs read-only access to leads they are tagged on, so they can prep for engagement kickoff. They do not create or edit leads.
+3.5 Administrator
+Manages users, roles, and the permissions matrix. Typically one or two IT or operations people. Has the highest level of access to the system configuration, not necessarily to business data.
+Beginner tip: Roles are just labels. What each role can actually do is controlled by the permissions matrix in Section 8. Keep roles conceptual and permissions granular — that combination is called Role-Based Access Control (RBAC).
+4. Tech Stack & Why We Picked It
+Every piece of the stack is picked for one of three reasons: you can learn it in a week, it has excellent free tutorials, or it has a generous free hosting tier.
+Layer
+Technology
+Why this choice
+Frontend UI
+React 18 + Vite
+Most popular UI library. Vite gives fast reloads.
+Styling
+Tailwind CSS
+No custom CSS files. Learn class names once.
+Routing
+React Router v6
+Standard for multi-page React apps.
+Forms
+React Hook Form + Zod
+Less boilerplate; Zod validates shape.
+HTTP client
+Axios
+Cleaner than fetch for interceptors / auth.
+Backend runtime
+Node.js 20 LTS
+Same language as frontend. JavaScript everywhere.
+Web framework
+Express.js 4
+Simplest, most-taught Node framework.
+ORM (DB access)
+Prisma
+Type-safe. Auto-generates queries from schema.
+Database
+PostgreSQL 15+
+Relational, rock-solid, generous free tiers.
+Auth
+JWT + bcrypt
+Stateless tokens. bcrypt hashes passwords.
+Email
+Resend (free tier)
+3,000 emails/month free. Clean API.
+File storage
+Supabase Storage
+Free 1 GB, simple S3-compatible API.
+Frontend hosting
+Vercel
+Deploy React apps from GitHub in 2 clicks.
+Backend hosting
+Render.com
+Free Node.js hosting. Sleeps when idle.
+DB hosting
+Supabase / Neon
+Free Postgres with 500 MB.
+Version control
+Git + GitHub
+Standard. Free unlimited private repos.
+4.1 Prerequisites You'll Need
+A computer with macOS, Linux, or Windows 10+.
+Node.js 20+ installed. Download from nodejs.org.
+Git installed. Download from git-scm.com.
+VS Code (or any editor you like).
+Free accounts on: GitHub, Supabase, Vercel, Render, Resend.
+5. Project Folder Structure
+Two separate folders in one GitHub repo, sometimes called a 'monorepo'. Alternatively, two separate repos — both work. Let's start with one repo for simplicity.
+algoleap-lms/ ├─ apps/ │  ├─ web/                  ← React frontend │  │  ├─ src/ │  │  │  ├─ components/     ← Button, Modal, Avatar, etc. │  │  │  ├─ pages/          ← One file per screen │  │  │  │  ├─ LoginPage.jsx │  │  │  │  ├─ DashboardPage.jsx │  │  │  │  ├─ LeadsPage.jsx │  │  │  │  ├─ LeadDetailPage.jsx │  │  │  │  ├─ LeadCreatePage.jsx │  │  │  │  ├─ AccountsPage.jsx │  │  │  │  ├─ ContactsPage.jsx │  │  │  │  ├─ UsersPage.jsx │  │  │  │  └─ PermissionsPage.jsx │  │  │  ├─ lib/ │  │  │  │  ├─ api.js       ← Axios instance w/ auth header │  │  │  │  └─ auth.js      ← Login / logout helpers │  │  │  ├─ context/ │  │  │  │  └─ AuthContext.jsx │  │  │  ├─ App.jsx         ← Router │  │  │  └─ main.jsx        ← Entry point │  │  ├─ .env               ← VITE_API_URL=http://localhost:4000 │  │  ├─ package.json │  │  └─ vite.config.js │  │ │  └─ api/                  ← Node/Express backend │     ├─ src/ │     │  ├─ routes/         ← One file per resource │     │  │  ├─ auth.routes.js │     │  │  ├─ accounts.routes.js │     │  │  ├─ contacts.routes.js │     │  │  ├─ leads.routes.js │     │  │  ├─ users.routes.js │     │  │  ├─ permissions.routes.js │     │  │  └─ uploads.routes.js │     │  ├─ controllers/    ← Business logic │     │  ├─ middleware/ │     │  │  ├─ auth.js      ← Verifies JWT │     │  │  └─ permit.js    ← Checks permissions │     │  ├─ services/ │     │  │  ├─ email.js     ← Sends email via Resend │     │  │  └─ storage.js   ← Uploads to Supabase │     │  ├─ prisma/ │     │  │  ├─ schema.prisma ← DB schema │     │  │  └─ seed.js       ← Inserts test data │     │  ├─ app.js          ← Express app setup │     │  └─ server.js       ← Starts the server │     ├─ .env               ← DATABASE_URL, JWT_SECRET, etc. │     └─ package.json │ ├─ .gitignore ├─ README.md └─ package.json             ← Root (optional workspaces)
+Why this structure? Separation of concerns. The frontend and backend can each be deployed to different hosts, developed by different people, and changed without breaking each other. Pages, components, and API routes each have one clear place to live.
+6. Environment Setup (Step by Step)
+Follow these in order. If any step fails, stop and fix it before moving on.
+6.1 Create the GitHub repo
+Go to github.com, click New repository.
+Name it 'algoleap-lms'. Make it private.
+Initialize with a README and a Node .gitignore.
+Clone to your machine: git clone <your-url>
+6.2 Create the frontend
+cd algoleap-lms mkdir apps && cd apps npm create vite@latest web -- --template react cd web npm install npm install react-router-dom axios react-hook-form zod npm install -D tailwindcss postcss autoprefixer npx tailwindcss init -p npm run dev
+You should see the Vite starter page at http://localhost:5173.
+6.3 Create the backend
+cd ../            # back to /apps mkdir api && cd api npm init -y npm install express cors dotenv bcryptjs jsonwebtoken npm install @prisma/client multer resend npm install -D prisma nodemon
+Add to api/package.json scripts:
+"scripts": {   "dev": "nodemon src/server.js",   "start": "node src/server.js",   "db:push": "prisma db push",   "db:studio": "prisma studio",   "db:seed": "node src/prisma/seed.js" }
+6.4 Create your PostgreSQL database
+Sign up at supabase.com — it's free and instant.
+Create a new project. Copy the Postgres connection URL.
+In apps/api/.env, paste it as DATABASE_URL=postgresql://…
+Add JWT_SECRET=some-long-random-string-at-least-32-chars
+Initialize Prisma: npx prisma init
+Edit prisma/schema.prisma with the schema from Section 7.
+Push the schema: npm run db:push
+Checkpoint: If 'npm run db:studio' opens a browser showing empty tables, you're done with setup. That means your code can talk to your database. Celebrate.
+7. Database Design
+This is the most important section. Get the data model right, and everything else is mechanical. Get it wrong, and every feature fights you.
+7.1 Tables at a Glance
+Table
+Purpose
+users
+People who log in. Stores email + password hash + role.
+roles
+Named role like 'Client Manager'. Default 5, extensible.
+permissions
+Atomic permissions like 'leads.create'. Reference list.
+role_permissions
+Join table: which permissions does each role have.
+accounts
+Client companies (e.g., DHL, Thomson Reuters).
+contacts
+People at client companies. Belongs to one account.
+leads
+Opportunities. Core table of the app.
+lead_attachments
+File metadata; actual files stored in Supabase.
+lead_activity
+Lightweight history of stage changes and assignments.
+7.2 Relationships Map
+One account has many contacts. One account has many leads. One contact can be attached to many leads (via a primary_contact_id on leads). One user owns many leads. One lead has many attachments and many activity entries.
+7.3 Prisma Schema
+Paste this into apps/api/prisma/schema.prisma.
+generator client { provider = "prisma-client-js" }  datasource db {   provider = "postgresql"   url      = env("DATABASE_URL") }  model User {   id            String    @id @default(cuid())   email         String    @unique   passwordHash  String   fullName      String   avatarColor   String?   // e.g., "#2d8b3f"   roleId        String   role          Role      @relation(fields: [roleId], references: [id])   isActive      Boolean   @default(true)   lastActiveAt  DateTime?   createdAt     DateTime  @default(now())    ownedAccounts    Account[]   ownedLeads       Lead[]     @relation("LeadOwner")   leadsAsPractice  Lead[]     @relation("LeadPracticeLeader")   activities       LeadActivity[] }  model Role {   id          String   @id @default(cuid())   name        String   @unique  // Executive, Practice Leader, etc.   description String?   isSystem    Boolean  @default(false)  // true for seeded roles   users       User[]   permissions RolePermission[] }  model Permission {   id          String   @id @default(cuid())   key         String   @unique  // e.g., "leads.create"   description String   group       String              // e.g., "Leads", "Accounts"   roles       RolePermission[] }  model RolePermission {   roleId       String   permissionId String   role         Role       @relation(fields: [roleId], references: [id])   permission   Permission @relation(fields: [permissionId], references: [id])   @@id([roleId, permissionId]) }  model Account {   id          String   @id @default(cuid())   name        String   industry    String?   region      String?   website     String?   tier        String?   // Strategic, Growth, etc.   ownerId     String?   owner       User?     @relation(fields: [ownerId], references: [id])   contacts    Contact[]   leads       Lead[]   createdAt   DateTime  @default(now())   updatedAt   DateTime  @updatedAt }  model Contact {   id         String   @id @default(cuid())   accountId  String   account    Account  @relation(fields: [accountId], references: [id])   fullName   String   title      String?   email      String?   phone      String?   role       String?   // Decision Maker, Champion, Influencer   leads      Lead[]    @relation("LeadPrimaryContact")   createdAt  DateTime  @default(now()) }  model Lead {   id                String   @id @default(cuid())   title             String   accountId         String   account           Account  @relation(fields: [accountId], references: [id])   primaryContactId  String?   primaryContact    Contact? @relation("LeadPrimaryContact", fields: [primaryContactId], references: [id])    serviceLine       String     // Product Eng / AI & Auto / Service Mgmt / Supply Chain   practiceArea      String?   deliveryFormat    String?    // POD / Managed / Studio MVP / On-Demand / As-a-Service   geography         String?    estimatedRevenue  Int?       // store in cents / base currency units   estimatedMonths   Int?   expectedStartDate DateTime?   probability       Int?       // 0..100   source            String?    stage             String     @default("NEW")   // NEW, QUALIFIED, PROPOSAL, NEGOTIATION, WON, LOST, ON_HOLD   description       String?    ownerId           String   owner             User       @relation("LeadOwner", fields: [ownerId], references: [id])   practiceLeaderId  String?   practiceLeader    User?      @relation("LeadPracticeLeader", fields: [practiceLeaderId], references: [id])    attachments       LeadAttachment[]   activity          LeadActivity[]    createdAt         DateTime @default(now())   updatedAt         DateTime @updatedAt }  model LeadAttachment {   id         String   @id @default(cuid())   leadId     String   lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)   fileName   String   fileSize   Int   mimeType   String   storageUrl String   uploadedById String   createdAt  DateTime @default(now()) }  model LeadActivity {   id        String   @id @default(cuid())   leadId    String   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)   userId    String   user      User     @relation(fields: [userId], references: [id])   type      String   // CREATED, STAGE_CHANGED, ASSIGNED, ATTACHMENT_ADDED, EDITED   fromValue String?   toValue   String?   note      String?   createdAt DateTime @default(now()) }
+Why CUID instead of integers? CUIDs (like cl9f82h1k0000…) are safer than auto-incrementing integers for public URLs. You don't leak 'how many leads do we have' to anyone looking at the URL bar.
+8. Configurable Permissions (RBAC) Design
+The user asked for configurable permissions. That means Administrators can change who can do what without a developer deploying new code. This is done through three ideas: atomic permissions, roles, and role-permission assignments.
+8.1 Atomic Permissions
+A permission is a single, granular capability. Name them like 'resource.action'.
+Permission Key
+What it lets you do
+leads.view_all
+See every lead in the system
+leads.view_own
+See leads where you are the owner
+leads.create
+Create a new lead
+leads.edit_any
+Edit any lead
+leads.edit_own
+Edit leads you own
+leads.assign
+Assign or reassign a lead to another user
+leads.move_stage
+Change the stage of a lead
+leads.delete
+Delete a lead
+leads.upload_attachment
+Upload files to leads
+accounts.view_all
+See all accounts
+accounts.manage
+Create and edit accounts
+contacts.manage
+Create and edit contacts
+users.manage
+Invite, edit, deactivate users
+permissions.configure
+Toggle the permissions matrix
+audit.view
+(v2) View the audit log
+8.2 Default Role Assignments
+These are the out-of-the-box defaults. Administrators can toggle any of them via the Permissions page.
+Permission
+Exec
+Prac Lead
+CM
+Team
+Admin
+leads.view_all
+Y
+Y
+N
+N
+Y
+leads.view_own
+Y
+Y
+Y
+Y
+Y
+leads.create
+Y
+Y
+Y
+N
+Y
+leads.edit_any
+Y
+Y
+N
+N
+Y
+leads.edit_own
+Y
+Y
+Y
+N
+Y
+leads.assign
+Y
+Y
+N
+N
+Y
+leads.move_stage
+Y
+Y
+Y
+N
+Y
+leads.delete
+N
+N
+N
+N
+Y
+leads.upload_attachment
+Y
+Y
+Y
+N
+Y
+accounts.manage
+Y
+Y
+Y
+N
+Y
+contacts.manage
+Y
+Y
+Y
+N
+Y
+users.manage
+N
+N
+N
+N
+Y
+permissions.configure
+N
+N
+N
+N
+Y
+8.3 How Permission Checks Work at Runtime
+On every API request, a middleware function checks two things: (1) is the user logged in, and (2) does the user's role have the required permission. If either fails, return HTTP 403.
+// apps/api/src/middleware/permit.js const { prisma } = require('../lib/prisma');  function permit(requiredKey) {   return async (req, res, next) => {     const userId = req.user?.id;     if (!userId) return res.status(401).json({ error: 'Not signed in' });      const user = await prisma.user.findUnique({       where: { id: userId },       include: {         role: {           include: { permissions: { include: { permission: true } } }         }       }     });      const keys = user.role.permissions.map(rp => rp.permission.key);     if (!keys.includes(requiredKey)) {       return res.status(403).json({ error: 'Forbidden', missing: requiredKey });     }     next();   }; }  module.exports = { permit };
+Use it on any route:
+// apps/api/src/routes/leads.routes.js const { permit } = require('../middleware/permit');  router.post('/leads', auth, permit('leads.create'), createLead); router.patch('/leads/:id', auth, permit('leads.edit_own'), editLead); router.delete('/leads/:id', auth, permit('leads.delete'), deleteLead);
+Scope matters: 'leads.edit_own' alone isn't enough — the handler must ALSO verify the current user is the owner. The permission says 'you're allowed to edit leads you own'; the controller must enforce 'this lead you're editing IS yours'.
+9. API Design — Endpoints & Contracts
+A REST API. Every endpoint is under /api. JSON in, JSON out. Auth via 'Authorization: Bearer <token>' header.
+9.1 Authentication Endpoints
+Method
+Path
+Purpose
+POST
+/api/auth/login
+Exchange email+password for a JWT
+POST
+/api/auth/logout
+Client-side: just drop the token
+GET
+/api/auth/me
+Return the currently logged-in user + permissions
+Login request body:
+POST /api/auth/login {   "email": "priya.menon@algoleap.com",   "password": "……" }
+Success response:
+200 OK {   "token": "eyJhbGciOiJIUzI1NiIs…",   "user": {     "id": "cl9…",     "email": "priya.menon@algoleap.com",     "fullName": "Priya Menon",     "role": { "name": "Client Manager" },     "permissions": ["leads.view_own","leads.create",…]   } }
+9.2 Accounts
+Method
+Path
+Purpose
+GET
+/api/accounts
+List accounts (paginated, filterable)
+POST
+/api/accounts
+Create a new account
+GET
+/api/accounts/:id
+Get an account with its contacts and leads
+PATCH
+/api/accounts/:id
+Update an account
+DELETE
+/api/accounts/:id
+Delete — admin only
+9.3 Contacts
+Method
+Path
+Purpose
+GET
+/api/contacts
+List contacts (filter by accountId)
+POST
+/api/contacts
+Create contact under an account
+PATCH
+/api/contacts/:id
+Edit contact
+DELETE
+/api/contacts/:id
+Delete contact
+9.4 Leads
+Method
+Path
+Purpose
+GET
+/api/leads
+List leads (supports ?stage, ?ownerId, ?serviceLine)
+POST
+/api/leads
+Create lead
+GET
+/api/leads/:id
+Get lead with activity and attachments
+PATCH
+/api/leads/:id
+Edit lead fields
+POST
+/api/leads/:id/assign
+Assign to a user (fires notification)
+POST
+/api/leads/:id/stage
+Move stage (fires notification)
+POST
+/api/leads/:id/attachments
+Upload file (multipart/form-data)
+DELETE
+/api/leads/:id/attachments/:aid
+Remove attachment
+DELETE
+/api/leads/:id
+Delete lead (admin)
+Sample: Create Lead request
+POST /api/leads {   "title": "DHL · ServiceNow AI Transformation",   "accountId": "cl9ac…",   "primaryContactId": "cl9co…",   "serviceLine": "Service Management",   "practiceArea": "ServiceNow",   "deliveryFormat": "POD",   "geography": "Central Europe",   "estimatedRevenue": 420000,   "estimatedMonths": 6,   "expectedStartDate": "2026-05-01",   "probability": 60,   "source": "Existing Client",   "stage": "NEW",   "practiceLeaderId": "cl9us…",   "description": "Expand ServiceNow with AI playbooks…" }
+9.5 Users & Roles (Admin-only)
+Method
+Path
+Purpose
+GET
+/api/users
+List all users
+POST
+/api/users
+Invite a new user (sends welcome email)
+PATCH
+/api/users/:id
+Update user (role, active status)
+GET
+/api/roles
+List roles with their permission keys
+POST
+/api/roles
+Create a custom role
+PATCH
+/api/roles/:id/permissions
+Toggle permissions for a role
+GET
+/api/permissions
+List all permission keys (catalog)
+10. Frontend Architecture & Routes
+React Router v6 handles the URLs. A top-level AuthContext holds the logged-in user and their permission set. A <ProtectedRoute> wrapper redirects to /login if no token.
+10.1 Route Map
+URL
+Component
+Who can see
+/login
+LoginPage
+Public
+/
+DashboardPage
+Any logged-in user
+/leads
+LeadsPage (kanban+table)
+Anyone with leads.view_own
+/leads/new
+LeadCreatePage
+leads.create
+/leads/:id
+LeadDetailPage
+Can see the lead
+/accounts
+AccountsPage
+accounts.view_all
+/accounts/:id
+AccountDetailPage
+accounts.view_all
+/contacts
+ContactsPage
+Any logged-in user
+/users
+UsersPage
+users.manage
+/permissions
+PermissionsPage
+permissions.configure
+10.2 Permission Helper in the UI
+Hide buttons the user doesn't have permission for. This is a UX nicety — the backend is the real enforcer.
+// apps/web/src/hooks/usePermission.js import { useAuth } from '../context/AuthContext';  export function usePermission(key) {   const { user } = useAuth();   return user?.permissions?.includes(key) ?? false; }  // Usage inside a component: const canCreate = usePermission('leads.create'); {canCreate && <button onClick={openCreate}>+ New Lead</button>}
+10.3 Axios Instance with Auto-Auth
+// apps/web/src/lib/api.js import axios from 'axios';  export const api = axios.create({   baseURL: import.meta.env.VITE_API_URL });  api.interceptors.request.use((config) => {   const token = localStorage.getItem('token');   if (token) config.headers.Authorization = 'Bearer ' + token;   return config; });  api.interceptors.response.use(   (r) => r,   (err) => {     if (err.response?.status === 401) {       localStorage.removeItem('token');       window.location.href = '/login';     }     return Promise.reject(err);   } );
+11. File Uploads (Attachments)
+We use Supabase Storage because it's free up to 1 GB and has a simple JS SDK. The actual file lives in Supabase; our DB only stores metadata and a URL.
+11.1 Setup
+In Supabase dashboard, create a Storage bucket named 'lead-attachments'.
+Make it private (not public). We'll generate signed URLs for downloads.
+Copy SUPABASE_URL and SUPABASE_SERVICE_KEY to apps/api/.env.
+npm install @supabase/supabase-js
+11.2 Upload Endpoint
+// apps/api/src/routes/uploads.routes.js const multer = require('multer'); const { createClient } = require('@supabase/supabase-js'); const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB  const supabase = createClient(   process.env.SUPABASE_URL,   process.env.SUPABASE_SERVICE_KEY );  router.post('/leads/:id/attachments',   auth,   permit('leads.upload_attachment'),   upload.single('file'),   async (req, res) => {     const { id: leadId } = req.params;     const { originalname, mimetype, size, buffer } = req.file;     const path = `${leadId}/${Date.now()}-${originalname}`;      const { data, error } = await supabase       .storage.from('lead-attachments')       .upload(path, buffer, { contentType: mimetype });      if (error) return res.status(500).json({ error: error.message });      const attachment = await prisma.leadAttachment.create({       data: {         leadId,         fileName: originalname,         fileSize: size,         mimeType: mimetype,         storageUrl: data.path,         uploadedById: req.user.id       }     });     res.json(attachment);   });
+Security note: Never trust the file extension. Validate the MIME type on the server. For v1, allow only: application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, image/png, image/jpeg.
+12. Email Notifications
+Resend is the simplest transactional email provider. Free tier: 100 emails/day, 3,000/month. Plenty for 25 users.
+12.1 Setup
+Sign up at resend.com. Verify your sending domain (or use onboarding@resend.dev for testing).
+Get an API key. Add RESEND_API_KEY to apps/api/.env.
+npm install resend
+12.2 Email Service
+// apps/api/src/services/email.js const { Resend } = require('resend'); const resend = new Resend(process.env.RESEND_API_KEY);  async function sendLeadAssigned(to, lead, assignedBy) {   await resend.emails.send({     from: 'Algoleap LMS <lms@algoleap.com>',     to,     subject: `You've been assigned: ${lead.title}`,     html: `       <h2>New lead assigned to you</h2>       <p><b>${assignedBy.fullName}</b> just assigned you to:</p>       <p style="font-size:18px"><b>${lead.title}</b></p>       <p>Stage: ${lead.stage} · Value: $${lead.estimatedRevenue}</p>       <p><a href="${process.env.WEB_URL}/leads/${lead.id}">Open in LMS →</a></p>     `   }); }  async function sendStageChanged(to, lead, fromStage, toStage, byUser) {   await resend.emails.send({     from: 'Algoleap LMS <lms@algoleap.com>',     to,     subject: `Stage change: ${lead.title}`,     html: `       <p><b>${byUser.fullName}</b> moved <b>${lead.title}</b>       from <b>${fromStage}</b> to <b>${toStage}</b>.</p>       <p><a href="${process.env.WEB_URL}/leads/${lead.id}">View lead</a></p>     `   }); }  module.exports = { sendLeadAssigned, sendStageChanged };
+12.3 Who Gets Notified
+Event
+Notified
+Lead created
+The assigned owner (if not the creator)
+Lead assigned / reassigned
+The new owner + the previous owner
+Stage changed
+Owner + Practice Leader of the lead
+Attachment uploaded
+Owner (only if someone else uploaded)
+Always send emails asynchronously: Don't block the API response while waiting for Resend. Fire-and-forget (or use a setImmediate) so the user gets their UI update instantly.
+13. Lead Lifecycle & State Machine
+A lead has exactly one stage at any time. Not every transition is allowed. A state machine (just a JSON object) describes which moves are valid.
+13.1 Allowed Transitions
+From
+To
+NEW
+QUALIFIED, LOST, ON_HOLD
+QUALIFIED
+PROPOSAL, LOST, ON_HOLD
+PROPOSAL
+NEGOTIATION, LOST, ON_HOLD
+NEGOTIATION
+WON, LOST, ON_HOLD
+ON_HOLD
+NEW, QUALIFIED, PROPOSAL, NEGOTIATION
+WON
+(terminal)
+LOST
+(terminal — can reopen only by cloning)
+13.2 Enforcing This in Code
+// apps/api/src/services/leadStateMachine.js const TRANSITIONS = {   NEW:         ['QUALIFIED','LOST','ON_HOLD'],   QUALIFIED:   ['PROPOSAL','LOST','ON_HOLD'],   PROPOSAL:    ['NEGOTIATION','LOST','ON_HOLD'],   NEGOTIATION: ['WON','LOST','ON_HOLD'],   ON_HOLD:     ['NEW','QUALIFIED','PROPOSAL','NEGOTIATION'],   WON:         [],   LOST:        [] };  function canTransition(from, to) {   return TRANSITIONS[from]?.includes(to) ?? false; } module.exports = { canTransition };
+13.3 The Transition Handler
+// Inside POST /leads/:id/stage const lead = await prisma.lead.findUnique({ where: { id } }); if (!canTransition(lead.stage, req.body.toStage))   return res.status(400).json({ error: 'Invalid transition' });  const updated = await prisma.lead.update({   where: { id },   data: { stage: req.body.toStage } });  await prisma.leadActivity.create({   data: {     leadId: id, userId: req.user.id, type: 'STAGE_CHANGED',     fromValue: lead.stage, toValue: req.body.toStage   } });  // Fire-and-forget email sendStageChanged(lead.owner.email, updated, lead.stage, req.body.toStage, req.user); res.json(updated);
+14. Security Basics
+A short list. Do all of these — skipping any one creates a real risk.
+Hash passwords with bcrypt. Never store plain text. Use a cost factor of 10 or higher.
+JWT secret must be at least 32 random characters. Rotate if leaked.
+Enable CORS only for your known frontend origin, not '*'.
+Validate every request body with Zod before using the values. Reject unknown fields.
+Rate-limit /auth/login to 5 attempts per minute per IP. Use express-rate-limit.
+Use HTTPS for all deployed environments. Free via Vercel / Render.
+Don't commit .env files. Add .env to .gitignore immediately.
+Sanitize file names before saving. Strip '../' and special characters.
+Limit file upload size at both the middleware (Multer) and the bucket level.
+Permission check on EVERY mutating endpoint. Even if the UI hides the button, the API must say no.
+Golden rule: The frontend is never the source of truth for security. A user can always craft API requests manually. Every meaningful check must happen on the server.
+15. Build Order — A Week-by-Week Plan
+Build in small, vertical slices. Each week you ship something you can actually click on. Never spend a week with nothing to show.
+Week 1 — Foundations
+Set up the GitHub repo, both apps, and PostgreSQL (Section 6).
+Define the Prisma schema and push it (Section 7).
+Write the seed script to create roles, permissions, and one admin user.
+Build the login endpoint and a login page. Nothing else.
+End of week: you can log in and see a blank dashboard. That's the goal.
+Week 2 — Accounts & Contacts
+API: GET, POST, PATCH for /api/accounts.
+UI: AccountsPage list + create modal + AccountDetailPage.
+Same for Contacts, tied to an account.
+Week 3 — Leads (the core)
+API: full CRUD for /api/leads.
+UI: LeadsPage (table view first, kanban later), LeadCreatePage, LeadDetailPage.
+Wire up the state machine for POST /leads/:id/stage.
+Week 4 — Permissions & Users
+Admin screens: UsersPage and PermissionsPage.
+Backend: role-permissions toggle endpoint.
+Frontend: usePermission hook in every page.
+Week 5 — Attachments & Emails
+Hook up Supabase Storage.
+Upload files on the LeadDetail page.
+Wire Resend for assign and stage-change emails.
+Week 6 — Polish & Deploy
+Convert LeadsPage from table-only to kanban + table toggle.
+Add filters and search.
+Deploy frontend to Vercel, backend to Render, DB on Supabase.
+Invite the first real users. Collect feedback. Iterate.
+16. Deployment Guide (Free Tier)
+16.1 Database — Supabase
+Already set up during local development (Section 6.4).
+The production DB is the same one — no migration needed.
+Optional: create a separate Supabase project for production to keep dev data clean.
+16.2 Backend — Render.com
+Sign up, link your GitHub.
+New → Web Service → select the repo.
+Root directory: apps/api
+Build command: npm install && npx prisma generate
+Start command: node src/server.js
+Add all your .env variables as environment variables in Render.
+Deploy. Render gives you a URL like https://algoleap-api.onrender.com.
+Heads up: Render free tier sleeps after 15 minutes of inactivity. First request after sleep can take ~30 seconds. Consider a cron-job.org ping every 10 minutes to keep it warm, or upgrade to the $7/mo tier if that's a problem.
+16.3 Frontend — Vercel
+Sign up, link GitHub.
+Add New → Project → import the repo.
+Root directory: apps/web
+Framework preset: Vite
+Environment variables: VITE_API_URL=https://algoleap-api.onrender.com
+Deploy. Vercel gives you a URL like https://algoleap-lms.vercel.app.
+16.4 Post-Deployment Checklist
+Update CORS on the backend to allow the Vercel URL.
+Test login end-to-end.
+Upload a test file and verify it appears in Supabase Storage.
+Send a test email and verify it arrives.
+Check the signup/invite flow with a real admin-created user.
+17. Testing Checklist
+Manual testing first, automated tests can come later. Work through this list before each release.
+17.1 Authentication
+Login with correct credentials succeeds.
+Login with wrong password fails with a friendly message.
+Accessing /leads without a token redirects to /login.
+Expired tokens redirect to /login.
+17.2 Accounts & Contacts
+Client Manager can create an account.
+Team Member can view but not edit an account.
+Adding a contact under an account succeeds.
+Deleting an account with leads is prevented (or confirms cascade).
+17.3 Leads
+Create a lead with all required fields.
+Attempt to create with missing title — should fail with 400.
+Move stage NEW → QUALIFIED succeeds.
+Move stage NEW → WON should fail (invalid transition).
+Reassigning a lead sends email to new owner.
+17.4 Permissions
+Team Member cannot see 'Create Lead' button.
+Team Member calling POST /api/leads directly gets 403.
+Admin toggles 'leads.create' off for CM — they lose the button immediately after re-login.
+17.5 Files & Emails
+Upload a 2 MB PDF — succeeds.
+Upload a 15 MB file — rejected (too large).
+Upload a .exe file — rejected (wrong MIME type).
+Stage change email arrives within 30 seconds.
+18. Appendix A — Seed Data
+This script creates all the starting data. Run it once, right after pushing your schema: 'npm run db:seed'.
+// apps/api/src/prisma/seed.js const { PrismaClient } = require('@prisma/client'); const bcrypt = require('bcryptjs'); const prisma = new PrismaClient();  const PERMISSIONS = [   ['leads.view_all','View all leads','Leads'],   ['leads.view_own','View own leads','Leads'],   ['leads.create','Create leads','Leads'],   ['leads.edit_any','Edit any lead','Leads'],   ['leads.edit_own','Edit own leads','Leads'],   ['leads.assign','Assign leads','Leads'],   ['leads.move_stage','Move lead stage','Leads'],   ['leads.delete','Delete leads','Leads'],   ['leads.upload_attachment','Upload attachments','Leads'],   ['accounts.view_all','View accounts','Accounts'],   ['accounts.manage','Create/edit accounts','Accounts'],   ['contacts.manage','Create/edit contacts','Contacts'],   ['users.manage','Manage users','Admin'],   ['permissions.configure','Configure permissions','Admin'], ];  const ROLE_DEFAULTS = {   'Executive': ['leads.view_all','leads.view_own','leads.create','leads.edit_any','leads.edit_own','leads.assign','leads.move_stage','leads.upload_attachment','accounts.view_all','accounts.manage','contacts.manage'],   'Practice Leader': ['leads.view_all','leads.view_own','leads.create','leads.edit_any','leads.edit_own','leads.assign','leads.move_stage','leads.upload_attachment','accounts.view_all','accounts.manage','contacts.manage'],   'Client Manager': ['leads.view_own','leads.create','leads.edit_own','leads.move_stage','leads.upload_attachment','accounts.view_all','accounts.manage','contacts.manage'],   'Team Member': ['leads.view_own','accounts.view_all'],   'Administrator': PERMISSIONS.map(([k]) => k), };  async function main() {   // Permissions   for (const [key, description, group] of PERMISSIONS) {     await prisma.permission.upsert({       where: { key }, update: {}, create: { key, description, group }     });   }   // Roles + role_permissions   for (const [roleName, keys] of Object.entries(ROLE_DEFAULTS)) {     const role = await prisma.role.upsert({       where: { name: roleName },       update: {},       create: { name: roleName, isSystem: true }     });     for (const key of keys) {       const p = await prisma.permission.findUnique({ where: { key } });       await prisma.rolePermission.upsert({         where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },         update: {},         create: { roleId: role.id, permissionId: p.id }       });     }   }   // First admin   const adminRole = await prisma.role.findUnique({ where: { name: 'Administrator' } });   await prisma.user.upsert({     where: { email: 'admin@algoleap.com' },     update: {},     create: {       email: 'admin@algoleap.com',       passwordHash: await bcrypt.hash('ChangeMe!2026', 10),       fullName: 'Admin',       roleId: adminRole.id     }   });   console.log('Seed complete.'); }  main().finally(() => prisma.$disconnect());
+19. Appendix B — Glossary
+Term
+Meaning
+RBAC
+Role-Based Access Control. Users get a role; roles have permissions.
+JWT
+JSON Web Token. A signed string that proves a user is logged in.
+ORM
+Object-Relational Mapper. Lets you write DB queries in JavaScript instead of SQL.
+CRUD
+Create, Read, Update, Delete — the four basic data operations.
+State Machine
+A set of rules describing which stage-to-stage moves are allowed.
+MVP
+Minimum Viable Product. The smallest version you can ship and still learn from.
+Middleware
+A function that runs before the main route handler, often for auth checks.
+Seeding
+Filling a fresh database with starter data so the app is usable immediately.
+CUID
+Collision-resistant Unique ID. Safer alternative to auto-incrementing integers.
+MIME type
+The format of a file, e.g., 'application/pdf'. Sent with every upload.
+End of document · Algoleap Lead Management System · Technical Specification v1.0

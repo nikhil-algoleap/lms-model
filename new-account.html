@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create New Account - Algoleap LMS">
+    <title>Create New Account - Algoleap LMS</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/store.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-icon"></div>
+                <div class="brand-text">
+                    <h2>algoleap</h2>
+                    <span>LMS V1.0</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Workspace</div>
+                <a href="dashboard.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="accounts.html" class="nav-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Accounts
+                </a>
+                <a href="contacts.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Contacts
+                </a>
+                <a href="leads.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Leads
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="avatar">G</div>
+                <div class="user-info">
+                    <div class="name">Gopi</div>
+                    <div class="role">Client Manager</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <main class="main-wrapper">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="breadcrumbs">
+                    Algoleap LMS / <span>New Account</span>
+                </div>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search accounts...">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <div class="form-header">
+                    <div>
+                        <h1>Create new account</h1>
+                        <p>Add a new company profile to the LMS</p>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-cancel" onclick="window.history.back()">Cancel</button>
+                        <button class="btn-save" onclick="handleSaveAccount()">Save account</button>
+                    </div>
+                </div>
+
+                <script>
+                    function handleSaveAccount() {
+                        const name = document.getElementById('account-name').value;
+                        if (name) {
+                            LMS_STORE.addAccount(name);
+                            location.href = 'accounts.html';
+                        } else {
+                            alert('Please enter an account name');
+                        }
+                    }
+                </script>
+
+                <div class="form-container">
+                    <form class="form-grid">
+                        <!-- Account Name -->
+                        <div class="form-group full-width">
+                            <label for="account-name">Account name <span class="required">*</span></label>
+                            <input type="text" id="account-name" class="form-control" placeholder="e.g., DHL Global Forwarding">
+                        </div>
+
+                        <!-- Account Address -->
+                        <div class="form-group full-width">
+                            <label for="address">Account address</label>
+                            <textarea id="address" class="form-control" placeholder="Headquarters address, street, city, country..."></textarea>
+                        </div>
+
+                        <!-- Annual Revenue -->
+                        <div class="form-group">
+                            <label for="revenue">Annual revenue (USD)</label>
+                            <input type="number" id="revenue" class="form-control" placeholder="e.g. 10000000">
+                        </div>
+
+                        <!-- Number of Employees -->
+                        <div class="form-group">
+                            <label for="employees">Number of employees</label>
+                            <input type="number" id="employees" class="form-control" placeholder="e.g. 5000">
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select id="status" class="form-control">
+                                <option value="Customer" selected>Customer</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <!-- Ownership -->
+                        <div class="form-group">
+                            <label for="ownership">Ownership</label>
+                            <select id="ownership" class="form-control">
+                                <option value="" selected disabled>Select ownership...</option>
+                                <option>Publicly Traded</option>
+                                <option>Privately Held</option>
+                                <option>Government / Public Sector</option>
+                                <option>Non-Profit</option>
+                                <option>Startup / VC Backed</option>
+                            </select>
+                        </div>
+
+                        <!-- Industry -->
+                        <div class="form-group">
+                            <label for="industry">Industry <span class="required">*</span></label>
+                            <select id="industry" class="form-control">
+                                <option value="" selected disabled>Select industry...</option>
+                                <option>Logistics & Supply Chain</option>
+                                <option>Banking & Financial Services</option>
+                                <option>Technology & SaaS</option>
+                                <option>Healthcare & Pharma</option>
+                                <option>Manufacturing</option>
+                                <option>Retail & E-commerce</option>
+                                <option>Energy & Utilities</option>
+                                <option>Education / EdTech</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Toast -->
+    <div class="floating-toast">
+        <div class="toast-dot"></div>
+        Prototype &middot; Click sidebar to explore
+    </div>
+</body>
+</html>

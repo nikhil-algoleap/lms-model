@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to your Algoleap LMS account.">
+    <title>Algoleap LMS - Sign In</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <!-- Thin dark green strip on the left -->
+        <div class="login-sidebar"></div>
+        
+        <div class="login-content">
+            <div class="login-wrapper">
+                <h1>Welcome back</h1>
+                <p class="subtitle">Sign in to your Algoleap LMS account.</p>
+
+                <!-- On submit, navigates to dashboard.html -->
+                <form action="dashboard.html" method="GET">
+                    <div class="form-group">
+                        <label for="email">Work email</label>
+                        <input type="email" id="email" class="form-control" value="nikhil.yedugani@algoleap.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-control" value="............" required>
+                        <div class="forgot-pw">
+                            <a href="#">Forgot password?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Sign in &rarr;</button>
+                </form>
+
+                <div class="login-footer">
+                    Need an account? Contact your <a href="#">administrator</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Prototype badge -->
+    <div class="prototype-badge" onclick="window.location.href='dashboard.html'" title="Go to Dashboard">
+        Prototype &middot; Click sidebar to explore
+    </div>
+</body>
+</html>

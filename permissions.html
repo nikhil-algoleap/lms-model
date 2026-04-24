@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Permissions Matrix - Algoleap LMS">
+    <title>Permissions Matrix - Algoleap LMS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-icon"></div>
+                <div class="brand-text">
+                    <h2>algoleap</h2>
+                    <span>LMS V1.0</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Workspace</div>
+                <a href="dashboard.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="accounts.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Accounts
+                </a>
+                <a href="contacts.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Contacts
+                </a>
+                <a href="leads.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Leads
+                </a>
+
+                <div class="nav-section-title">Admin</div>
+                <a href="users-roles.html" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Users & Roles
+                </a>
+                <a href="permissions.html" class="nav-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Permissions
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="avatar">G</div>
+                <div class="user-info">
+                    <div class="name">Gopi</div>
+                    <div class="role">Client Manager</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <main class="main-wrapper">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="breadcrumbs">
+                    Algoleap LMS / <span>Permissions</span>
+                </div>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search permissions...">
+                        <span class="shortcut">⌘K</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <div class="page-header-actions">
+                    <div>
+                        <h1>Permissions Matrix</h1>
+                        <p class="text-muted" style="margin-top: 4px;">Configure what each role can do. Changes apply immediately to all users in the role.</p>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button id="reset-permissions" class="btn btn-secondary" style="border: 1px solid var(--border-color); background: white;">Reset to defaults</button>
+                        <button id="save-permissions" class="btn btn-primary" style="padding: 0.5rem 1.25rem; min-width: 140px;">Save changes</button>
+                    </div>
+                </div>
+
+                <!-- RBAC Banner -->
+                <div class="rbac-banner">
+                    <div class="rbac-banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </div>
+                    <div class="rbac-banner-content">
+                        <h2>Configurable RBAC</h2>
+                        <p>Toggle any permission per role. You can also create custom roles from the "Users & Roles" page.</p>
+                    </div>
+                </div>
+
+                <!-- Matrix Control -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-dark);">Role → Permission Matrix</h3>
+                    <select class="form-control" style="width: auto; height: 32px; padding: 0 12px; font-size: 0.8rem;">
+                        <option>Show all</option>
+                    </select>
+                </div>
+
+                <!-- Permissions Matrix Table -->
+                <div class="matrix-container">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">PERMISSION</th>
+                                <th style="text-align: center;">EXECUTIVE</th>
+                                <th style="text-align: center;">PRACTICE LEADER</th>
+                                <th style="text-align: center;">CLIENT MANAGER</th>
+                                <th style="text-align: center;">TEAM MEMBER</th>
+                                <th style="text-align: center;">ADMINISTRATOR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- LEADS Section -->
+                            <tr>
+                                <td colspan="6" class="matrix-section-header">LEADS</td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">View all leads</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Create leads</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Edit any lead</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Edit own leads</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Assign / reassign leads</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Move lead stage</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Delete leads</td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Upload attachments</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+
+                            <!-- ACCOUNTS & CONTACTS Section -->
+                            <tr>
+                                <td colspan="6" class="matrix-section-header">ACCOUNTS & CONTACTS</td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">View all accounts</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Create / edit accounts</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Create / edit contacts</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+
+                            <!-- ADMINISTRATION Section -->
+                            <tr>
+                                <td colspan="6" class="matrix-section-header">ADMINISTRATION</td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Manage users & invites</td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">Configure permissions</td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                            <tr>
+                                <td class="matrix-label">View audit log</td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox"><span class="slider"></span></label></td>
+                                <td align="center"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Toast -->
+    <div class="floating-toast">
+        <div class="toast-dot"></div>
+        <span id="toast-message">Prototype &middot; Click sidebar to explore</span>
+    </div>
+
+    <script>
+        document.getElementById('save-permissions').addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerText;
+            const toast = document.querySelector('.floating-toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Saving changes...';
+            
+            setTimeout(() => {
+                // Success state
+                btn.innerHTML = 'Saved successfully';
+                btn.style.background = '#22c55e';
+                btn.style.borderColor = '#22c55e';
+                
+                // Show success toast
+                toast.style.background = '#0d2618';
+                toast.style.borderColor = '#22c55e';
+                toastMessage.innerHTML = 'Permissions matrix updated and applied to all roles.';
+                document.querySelector('.toast-dot').style.background = '#22c55e';
+                
+                setTimeout(() => {
+                    // Reset button
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    
+                    // Revert toast after 3 seconds
+                    setTimeout(() => {
+                        toast.style.background = '';
+                        toast.style.borderColor = '';
+                        toastMessage.innerHTML = 'Prototype &middot; Click sidebar to explore';
+                        document.querySelector('.toast-dot').style.background = '';
+                    }, 4000);
+                }, 2000);
+            }, 1200);
+        });
+
+        document.getElementById('reset-permissions').addEventListener('click', function() {
+            if(confirm('Are you sure you want to reset all permissions to system defaults?')) {
+                location.reload();
+            }
+        });
+    </script>
+</body>
+</html>
