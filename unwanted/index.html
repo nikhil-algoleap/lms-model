@@ -17,16 +17,16 @@
                 <h1>Welcome back</h1>
                 <p class="subtitle">Sign in to your Algoleap LMS account.</p>
 
-                <!-- On submit, navigates to dashboard.html -->
-                <form action="dashboard.html" method="GET">
+                <!-- Auth script handles submission -->
+                <form id="login-form">
                     <div class="form-group">
                         <label for="email">Work email</label>
-                        <input type="email" id="email" class="form-control" value="nikhil.yedugani@algoleap.com" required>
+                        <input type="email" id="email" class="form-control" placeholder="name@algoleap.com" required>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" class="form-control" value="............" required>
+                        <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
                         <div class="forgot-pw">
                             <a href="#">Forgot password?</a>
                         </div>
@@ -46,5 +46,7 @@
     <div class="prototype-badge" onclick="window.location.href='dashboard.html'" title="Go to Dashboard">
         Prototype &middot; Click sidebar to explore
     </div>
+
+    <script src="js/auth.js"></script>
 </body>
 </html>

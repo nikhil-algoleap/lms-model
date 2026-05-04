@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// NEW MODELS (RBAC & System)
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  avatarColor   String?   @map("avatar_color")
+  roleId        String    @map("role_id")
+  role          Role      @relation(fields: [roleId], references: [id])
+  isActive      Boolean   @default(true) @map("is_active")
+  lastActiveAt  DateTime? @map("last_active_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations to existing tables if we want to link them
+  // For now, we keep them separate or add foreign keys later
+  activities       LeadActivity[]
+  
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  users       User[]
+  permissions RolePermission[]
+  
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String
+  group       String
+  roles       RolePermission[]
+  
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ==========================================
+// EXISTING TABLES (Preserved & Enhanced)
+// ==========================================
+
+/// This model contains row level security.
+model Account {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  address        String?
+  industry       String?
+  annualRevenue  String?   @map("annual_revenue")
+  employeesCount Int?      @default(0) @map("employees_count")
+  ownership      String?
+  status         String?   @default("Active")
+  region         String?
+  contactsCount  Int?      @default(0) @map("contacts_count")
+  openLeads      Int?      @default(0) @map("open_leads")
+  ltv            String?
+  ownerInitials  String?    @map("owner_initials")
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  // Relations
+  contacts       Contact[]
+  leads          Lead[]
+
+  @@map("accounts")
+}
+
+/// This model contains row level security.
+model Contact {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName       String    @map("full_name")
+  title          String?
+  email          String?
+  phone          String?
+  accountId      String?   @map("account_id") @db.Uuid
+  account        Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  role           String?
+  location       String?
+  department     String?
+  reportsTo      String?   @map("reports_to")
+  ownerInitials  String?    @map("owner_initials")
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  // Relations
+  leads          Lead[]
+
+  @@map("contacts")
+}
+
+/// This model contains row level security.
+model Lead {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String
+  accountId       String?   @map("account_id") @db.Uuid
+  account         Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  contactId       String?   @map("contact_id") @db.Uuid
+  contact         Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  serviceLine     String?   @map("service_line")
+  deliveryFormat  String?   @map("delivery_format")
+  value           String?
+  probability     Int?      @default(0)
+  dueDate         DateTime? @db.Date @map("due_date")
+  ownerInitials   String?    @map("owner_initials")
+  stage           String?   @default("NEW")
+  isFeatured      Boolean?  @default(false) @map("is_featured")
+  description     String?
+  practiceArea    String?   @map("practice_area")
+  estimatedDuration Int?     @map("estimated_duration")
+  source          String?   @default("Existing Client")
+  practiceLeader  String?   @map("practice_leader")
+  clientManager   String?   @map("client_manager")
+  createdAt       DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  // For relations
+  activities       LeadActivity[]
+
+  @@map("leads")
+}
+
+// ==========================================
+// NEW FEATURES FOR EXISTING TABLES
+// ==========================================
+
+model LeadAttachment {
+  id           String   @id @default(cuid())
+  leadId       String   @map("lead_id") @db.Uuid // Must match leads.id type
+  fileName     String   @map("file_name")
+  fileSize     Int      @map("file_size")
+  mimeType     String   @map("mime_type")
+  storageUrl   String   @map("storage_url")
+  uploadedById String   @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("lead_attachments")
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id") @db.Uuid // Match leads.id
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String?  @map("user_id") // Optional for now
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // CREATED, STAGE_CHANGED, ASSIGNED, ATTACHMENT_ADDED, EDITED
+  fromValue String?  @map("from_value")
+  toValue   String?  @map("to_value")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("lead_activity")
+}
