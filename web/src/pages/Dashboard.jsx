@@ -13,6 +13,8 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('lms_user') || '{"fullName": "User", "role": "Team Member"}');
+  
   const [stats, setStats] = useState({
     totalLeads: 0,
     pipelineValue: '$0.0M',
@@ -49,15 +51,28 @@ const Dashboard = () => {
     { label: 'AVG. DEAL SIZE', value: stats.avgDealSize, trend: '3% vs last quarter', color: 'border-rose-400', isUp: false },
   ];
 
+  // Role badge color mapping for dashboard
+  const roleBadgeColor = {
+    'Administrator': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    'Practice Leader': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    'Client Manager': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    'Team Member': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+  };
+
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
       
       {/* Header Section */}
       <div className="bg-[#122b1c] text-white p-10 rounded-[2.5rem] relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div className="space-y-2">
-          <h1 className="text-5xl font-serif tracking-tight">
-            Good morning, Nikhil 👋
-          </h1>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-5xl font-serif tracking-tight">
+              Good morning, {user.fullName.split(' ')[0]} 👋
+            </h1>
+            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${roleBadgeColor[user.role] || 'bg-slate-500/20 text-slate-300 border-slate-500/30'}`}>
+              {user.role}
+            </span>
+          </div>
           <p className="text-emerald-200/60 font-medium">
             Live data from Supabase · {stats.totalLeads} leads in pipeline
           </p>
