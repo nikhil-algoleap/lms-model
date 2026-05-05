@@ -5,18 +5,15 @@ import {
   Users, 
   Target, 
   Building2, 
-  Settings, 
   LogOut,
-  ShieldCheck,
-  Zap,
   UserPlus,
   KeyRound,
-  ChevronRight
 } from 'lucide-react';
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('lms_user') || '{"fullName": "Nikhil Y", "role": "Admin"}');
+  const user = JSON.parse(localStorage.getItem('lms_user') || '{"fullName": "User", "role": "Team Member"}');
+  const isAdmin = user.role === 'Administrator';
 
   const handleLogout = () => {
     localStorage.clear();
@@ -29,6 +26,14 @@ const Sidebar = () => {
     { name: 'Accounts', icon: Building2, path: '/accounts' },
     { name: 'Contacts', icon: Users, path: '/contacts' },
   ];
+
+  // Role badge color mapping
+  const roleBadgeColor = {
+    'Administrator': 'bg-emerald-50 text-emerald-700',
+    'Practice Leader': 'bg-purple-50 text-purple-700',
+    'Client Manager': 'bg-blue-50 text-blue-700',
+    'Team Member': 'bg-slate-100 text-slate-500',
+  };
 
   return (
     <aside className="w-72 bg-white h-screen flex flex-col border-r border-slate-100">
@@ -44,7 +49,6 @@ const Sidebar = () => {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Intelligence</p>
         </div>
       </div>
-
 
       <nav className="flex-1 px-8 space-y-2 mt-4">
         {menuItems.map((item) => (
@@ -64,31 +68,34 @@ const Sidebar = () => {
           </NavLink>
         ))}
 
-        <div className="pt-10 space-y-1">
+        {/* Administration Section — Only visible to Administrators */}
+        {isAdmin && (
+          <div className="pt-10 space-y-1">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 mb-4">Administration</p>
             <NavLink
-                to="/users-roles"
-                className={({ isActive }) => 
-                    `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
-                      isActive ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-900'
-                    }`
-                  }
+              to="/users-roles"
+              className={({ isActive }) => 
+                `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
+                  isActive ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-900'
+                }`
+              }
             >
-                <UserPlus size={20} />
-                <span>Users & Roles</span>
+              <UserPlus size={20} />
+              <span>Users & Roles</span>
             </NavLink>
             <NavLink
-                to="/permissions"
-                className={({ isActive }) => 
-                    `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
-                      isActive ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-900'
-                    }`
-                  }
+              to="/permissions"
+              className={({ isActive }) => 
+                `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
+                  isActive ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-900'
+                }`
+              }
             >
-                <KeyRound size={20} />
-                <span>Permissions</span>
+              <KeyRound size={20} />
+              <span>Permissions</span>
             </NavLink>
-        </div>
+          </div>
+        )}
       </nav>
 
       <div className="p-8">
@@ -98,7 +105,9 @@ const Sidebar = () => {
             </div>
             <div className="flex-1 overflow-hidden">
                 <p className="text-xs font-black text-slate-900 truncate">{user.fullName}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{user.role}</p>
+                <span className={`text-[9px] font-black uppercase tracking-tight px-2 py-0.5 rounded-md ${roleBadgeColor[user.role] || 'bg-slate-100 text-slate-500'}`}>
+                  {user.role}
+                </span>
             </div>
             <button onClick={handleLogout} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
                 <LogOut size={16} />
@@ -110,3 +119,5 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
+
