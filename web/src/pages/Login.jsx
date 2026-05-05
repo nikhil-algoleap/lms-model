@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, ShieldCheck, Users, Briefcase, User as UserIcon } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('nikhil@algoleap.com');
@@ -9,6 +9,16 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const demoAccounts = [
+    { email: 'nikhil@algoleap.com', role: 'Administrator', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' },
+    { email: 'prasad@algoleap', role: 'Executive', icon: Briefcase, color: 'text-purple-500 bg-purple-50' },
+  ];
+
+  const quickLogin = (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -89,7 +99,7 @@ const Login = () => {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-slate-400 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-200 mt-2"
+              className="w-full bg-[#358b49] hover:bg-[#2a7039] disabled:bg-slate-400 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-100 mt-2"
             >
               {loading ? (
                 <Loader2 className="animate-spin" size={20} />
@@ -101,6 +111,28 @@ const Login = () => {
               )}
             </button>
           </form>
+
+          {/* Quick Access Section */}
+          <div className="mt-10 pt-8 border-t border-slate-50">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Quick Access for Demo</p>
+            <div className="grid grid-cols-2 gap-3">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.email}
+                  onClick={() => quickLogin(account.email)}
+                  className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-[#358b49] hover:bg-slate-50 transition-all text-left group"
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${account.color}`}>
+                    <account.icon size={16} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-slate-900 truncate">{account.role}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{account.email}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <p className="text-center mt-8 text-slate-400 font-medium text-sm">
