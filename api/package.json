@@ -8,7 +8,10 @@
     "dev": "nodemon src/server.js",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "node src/prisma/seed.js"
+    "db:seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.x.x",

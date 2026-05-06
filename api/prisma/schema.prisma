@@ -23,9 +23,10 @@ model User {
   lastActiveAt  DateTime? @map("last_active_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
-  // Relations to existing tables if we want to link them
-  // For now, we keep them separate or add foreign keys later
   activities       LeadActivity[]
+  systemActivities SystemActivity[]
+  ownedDeals       Deal[]
+  dealActivities   DealActivity[]
   
   @@map("users")
 }
@@ -68,7 +69,7 @@ model RolePermission {
 /// This model contains row level security.
 model Account {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
+  name           String    @unique
   address        String?
   industry       String?
   annualRevenue  String?   @map("annual_revenue")
@@ -85,6 +86,7 @@ model Account {
   // Relations
   contacts       Contact[]
   leads          Lead[]
+  deals          Deal[]
 
   @@map("accounts")
 }
@@ -94,7 +96,7 @@ model Contact {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   fullName       String    @map("full_name")
   title          String?
-  email          String?
+  email          String?   @unique
   phone          String?
   accountId      String?   @map("account_id") @db.Uuid
   account        Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
@@ -107,6 +109,7 @@ model Contact {
 
   // Relations
   leads          Lead[]
+  stakeholderIn  DealStakeholder[]
 
   @@map("contacts")
 }
@@ -114,7 +117,7 @@ model Contact {
 /// This model contains row level security.
 model Lead {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title           String
+  title           String    @unique
   accountId       String?   @map("account_id") @db.Uuid
   account         Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   contactId       String?   @map("contact_id") @db.Uuid
@@ -137,6 +140,7 @@ model Lead {
 
   // For relations
   activities       LeadActivity[]
+  convertedDeal    Deal?          @relation(name: "LeadToDeal")
 
   @@map("leads")
 }
@@ -171,4 +175,95 @@ model LeadActivity {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("lead_activity")
+}
+
+model SystemActivity {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // LOGIN, ROLE_CHANGE, USER_SUSPENDED, SETTINGS_UPDATED
+  targetId  String?  @map("target_id") 
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("system_activity")
+}
+
+model Deal {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title               String           @unique
+  accountId           String?          @map("account_id") @db.Uuid
+  account             Account?         @relation(fields: [accountId], references: [id])
+  sourceLeadId        String?          @unique @map("source_lead_id") @db.Uuid
+  sourceLead          Lead?            @relation(name: "LeadToDeal", fields: [sourceLeadId], references: [id])
+  stage               String           // DISCOVERY, PROPOSAL, NEGOTIATION, CONTRACT, CLOSED_WON, CLOSED_LOST, ON_HOLD
+  value               Decimal?         @db.Decimal(15, 2)
+  probability         Int              @default(0)
+  ownerId             String?          @map("owner_id")
+  owner               User?            @relation(fields: [ownerId], references: [id])
+  expectedCloseDate   DateTime?        @map("expected_close_date")
+  description         String?
+  mrr                 Decimal?         @db.Decimal(15, 2)
+  arr                 Decimal?         @db.Decimal(15, 2)
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  activities          DealActivity[]
+  documents           DealDocument[]
+  competitors         DealCompetitor[]
+  stakeholders        DealStakeholder[]
+
+  @@map("deals")
+}
+
+model DealActivity {
+  id        String   @id @default(cuid())
+  dealId    String   @map("deal_id") @db.Uuid
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // STAGE_CHANGE, NOTE, CALL, EMAIL, TASK
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("deal_activities")
+}
+
+model DealDocument {
+  id           String   @id @default(cuid())
+  dealId       String   @map("deal_id") @db.Uuid
+  deal         Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  title        String
+  fileName     String   @map("file_name")
+  fileSize     Int?     @map("file_size")
+  mimeType     String?  @map("mime_type")
+  storageUrl   String   @map("storage_url")
+  uploadedById String   @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("deal_documents")
+}
+
+model DealCompetitor {
+  id        String  @id @default(cuid())
+  dealId    String  @map("deal_id") @db.Uuid
+  deal      Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  name      String
+  strength  String?
+  weakness  String?
+  notes     String?
+
+  @@map("deal_competitors")
+}
+
+model DealStakeholder {
+  id        String   @id @default(cuid())
+  dealId    String   @map("deal_id") @db.Uuid
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contactId String   @map("contact_id") @db.Uuid
+  contact   Contact  @relation(fields: [contactId], references: [id])
+  role      String?  // CHAMPION, DECISION_MAKER, INFLUENCER, BLOCKER
+  notes     String?
+
+  @@map("deal_stakeholders")
 }

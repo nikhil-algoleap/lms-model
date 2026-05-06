@@ -30,3 +30,7 @@ rename_script.py
 test_supabase.js
 *temp*
 *.log
+api/scratch/
+walkthrough.md
+implementation_plan.md
+task.md

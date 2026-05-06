@@ -23,6 +23,7 @@ const Dashboard = () => {
   });
 
   const [leads, setLeads] = useState([]);
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,12 +38,35 @@ const Dashboard = () => {
 
         const leadsRes = await api.get('/leads');
         setLeads(leadsRes.data.slice(0, 3));
+
+        const activityRes = await api.get('/dashboard/activity');
+        setActivities(activityRes.data);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       }
     };
     fetchData();
   }, []);
+
+  const getActivityIcon = (type) => {
+    switch(type) {
+      case 'WON': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+      case 'CREATED': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+      case 'LOGIN': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>;
+      default: return <Activity size={16} className="text-slate-400" />;
+    }
+  };
+
+  const getRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return date.toLocaleDateString();
+  };
 
   const kpis = [
     { label: 'OPEN PIPELINE', value: stats.pipelineValue, trend: '+ 18% vs last quarter', color: 'border-emerald-500', isUp: true },
@@ -129,66 +153,31 @@ const Dashboard = () => {
           <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm flex-1">
             <div className="mb-10">
               <h3 className="text-xl font-bold text-slate-900 tracking-tight">Recent Activity</h3>
-              <p className="text-sm text-slate-500 font-medium mt-1">Across accounts you can view</p>
+              <p className="text-sm text-slate-500 font-medium mt-1">Real-time updates from across the platform</p>
             </div>
 
             <div className="relative pl-6 space-y-10 border-l border-slate-100 ml-4">
-              
-              {/* Activity Item 1 */}
-              <div className="relative">
-                <div className="absolute -left-[45px] top-0 w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center border-4 border-white shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              {activities.length > 0 ? activities.map((activity, idx) => (
+                <div key={activity.id || idx} className="relative">
+                  <div className={`absolute -left-[45px] top-0 w-10 h-10 rounded-full ${activity.type === 'LOGIN' ? 'bg-blue-50' : 'bg-emerald-50'} flex items-center justify-center border-4 border-white shadow-sm`}>
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div>
+                    <p className="text-slate-800 text-base">
+                      <span className="font-bold text-slate-900">{activity.user?.fullName === user.fullName ? 'You' : activity.user?.fullName}</span> 
+                      {activity.type === 'LOGIN' ? ' logged in' : ` ${activity.note}`}
+                      {activity.displayTitle && activity.type !== 'LOGIN' && <span className="font-bold text-slate-900 ml-1">{activity.displayTitle}</span>}
+                    </p>
+                    <p className="text-sm text-slate-500 mt-1.5 font-medium">{getRelativeTime(activity.createdAt)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-slate-800 text-base">
-                    <span className="font-bold text-slate-900">Rajesh</span> moved <span className="font-bold text-slate-900">Cornerstone · HR Tech Integration</span> to <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded ml-1">Won</span>
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1.5 font-medium">2 hours ago · $540K deal closed</p>
+              )) : (
+                <div className="py-10 text-center text-slate-400 font-medium">
+                  No recent activity recorded yet.
                 </div>
-              </div>
-
-              {/* Activity Item 2 */}
-              <div className="relative">
-                <div className="absolute -left-[45px] top-0 w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center border-4 border-white shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                </div>
-                <div>
-                  <p className="text-slate-800 text-base">
-                    <span className="font-bold text-slate-900">You</span> created new lead <span className="font-bold text-slate-900">Cargill · Supply Chain Intelligence POD</span>
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1.5 font-medium">Yesterday · 4:23 PM</p>
-                </div>
-              </div>
-
-              {/* Activity Item 3 */}
-              <div className="relative">
-                <div className="absolute -left-[45px] top-0 w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center border-4 border-white shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M16 21v-2a4 4 0 0 0-4-4H5c-1.1 0-2 .9-2 2v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                </div>
-                <div>
-                  <p className="text-slate-800 text-base">
-                    <span className="font-bold text-slate-900">Prashanth</span> reassigned <span className="font-bold text-slate-900">HPE · Enterprise Observability</span> to <span className="font-bold text-slate-900">Vikram Iyer</span>
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1.5 font-medium">Yesterday · 11:02 AM</p>
-                </div>
-              </div>
-
-              {/* Activity Item 4 */}
-              <div className="relative">
-                <div className="absolute -left-[45px] top-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border-4 border-white shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                </div>
-                <div>
-                  <p className="text-slate-800 text-base">
-                    <span className="font-bold text-slate-900">Gopi</span> uploaded <span className="font-bold text-slate-900">DHL_ServiceNow_SOW_v3.pdf</span> to <span className="font-bold text-slate-900">DHL · ServiceNow AI Transformation</span>
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1.5 font-medium">2 days ago</p>
-                </div>
-              </div>
-
+              )}
             </div>
           </div>
-
         </div>
 
         {/* Right: My Leads */}

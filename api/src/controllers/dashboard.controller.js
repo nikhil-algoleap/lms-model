@@ -28,3 +28,44 @@ exports.getStats = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getRecentActivity = async (req, res) => {
+  try {
+    // Get latest lead activities
+    const leadActivities = await prisma.leadActivity.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { fullName: true } },
+        lead: { select: { title: true, account: { select: { name: true } } } }
+      }
+    });
+
+    // Get latest system activities (logins, role changes etc)
+    const systemActivities = await prisma.systemActivity.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { fullName: true } }
+      }
+    });
+
+    // Combine and sort
+    const combined = [
+      ...leadActivities.map(a => ({
+        ...a,
+        source: 'LEAD',
+        displayTitle: a.lead?.account?.name ? `${a.lead.account.name} · ${a.lead.title}` : a.lead?.title
+      })),
+      ...systemActivities.map(a => ({
+        ...a,
+        source: 'SYSTEM',
+        displayTitle: 'System Event'
+      }))
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+
+    res.json(combined);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

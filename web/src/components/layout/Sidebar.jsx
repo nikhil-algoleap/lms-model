@@ -8,6 +8,7 @@ import {
   LogOut,
   UserPlus,
   KeyRound,
+  Columns
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -22,6 +23,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'Pipeline', icon: Columns, path: '/pipeline' },
     { name: 'Leads', icon: Target, path: '/leads' },
     { name: 'Accounts', icon: Building2, path: '/accounts' },
     { name: 'Contacts', icon: Users, path: '/contacts' },

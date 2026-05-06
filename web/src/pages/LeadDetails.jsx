@@ -40,6 +40,17 @@ const LeadDetails = () => {
     fetchLead();
   }, [id]);
 
+  const handlePromote = async () => {
+    if (!window.confirm('Are you sure you want to promote this lead to a deal? This will move it to the Deal Pipeline.')) return;
+    
+    try {
+      const res = await api.post(`/deals/convert/${id}`);
+      navigate(`/deals/${res.data.id}`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to promote lead');
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#122b1c]"></div>
@@ -89,6 +100,15 @@ const LeadDetails = () => {
         </div>
 
         <div className="flex items-center gap-3">
+           {lead.stage !== 'CONVERTED' && (
+             <button 
+               onClick={handlePromote}
+               className="bg-[#358b49] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#2a7039] transition-all text-sm shadow-lg shadow-green-900/10"
+             >
+               <TrendingUp size={18} />
+               <span>Promote to Deal</span>
+             </button>
+           )}
            <button className="bg-white text-slate-600 px-6 py-3 rounded-xl font-bold border border-slate-200 hover:bg-slate-50 transition-all text-sm shadow-sm">
               Move Stage
            </button>

@@ -34,6 +34,7 @@ app.use('/api/accounts', authMiddleware, require('./routes/accounts.routes'));
 app.use('/api/contacts', authMiddleware, require('./routes/contacts.routes'));
 app.use('/api/admin', authMiddleware, require('./routes/admin.routes'));
 app.use('/api/import', authMiddleware, require('./routes/import.routes'));
+app.use('/api/deals', authMiddleware, require('./routes/deals.routes'));
 
 // Basic Health Check
 app.get('/health', (req, res) => {

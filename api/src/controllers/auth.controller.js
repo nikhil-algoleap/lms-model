@@ -57,6 +57,20 @@ exports.login = async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    // Update last active and log login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActiveAt: new Date() }
+    });
+
+    await prisma.systemActivity.create({
+      data: {
+        userId: user.id,
+        type: 'LOGIN',
+        note: `User logged in from web interface`
+      }
+    });
+
     res.json({
       token,
       user: {
