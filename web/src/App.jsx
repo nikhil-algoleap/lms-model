@@ -11,6 +11,7 @@ import Permissions from './pages/Permissions';
 import LeadDetails from './pages/LeadDetails';
 import Pipeline from './pages/Pipeline';
 import DealDetails from './pages/DealDetails';
+import Forecast from './pages/Forecast';
 import { ShieldOff } from 'lucide-react';
 
 const Layout = ({ children }) => (
@@ -68,6 +69,7 @@ function App() {
         
         {/* Protected LMS Routes - All authenticated users */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/forecast" element={<ProtectedRoute><Forecast /></ProtectedRoute>} />
         <Route path="/pipeline" element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
         <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
         <Route path="/leads/:id" element={<ProtectedRoute><LeadDetails /></ProtectedRoute>} />

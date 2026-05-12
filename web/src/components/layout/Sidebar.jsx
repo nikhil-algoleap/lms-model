@@ -8,7 +8,8 @@ import {
   LogOut,
   UserPlus,
   KeyRound,
-  Columns
+  Columns,
+  TrendingUp
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -23,6 +24,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'Forecast', icon: TrendingUp, path: '/forecast' },
     { name: 'Pipeline', icon: Columns, path: '/pipeline' },
     { name: 'Leads', icon: Target, path: '/leads' },
     { name: 'Accounts', icon: Building2, path: '/accounts' },

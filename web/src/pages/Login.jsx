@@ -112,27 +112,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Quick Access Section */}
-          <div className="mt-10 pt-8 border-t border-slate-50">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Quick Access for Demo</p>
-            <div className="grid grid-cols-2 gap-3">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.email}
-                  onClick={() => quickLogin(account.email)}
-                  className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-[#358b49] hover:bg-slate-50 transition-all text-left group"
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${account.color}`}>
-                    <account.icon size={16} />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-900 truncate">{account.role}</p>
-                    <p className="text-[9px] text-slate-400 truncate">{account.email}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         <p className="text-center mt-8 text-slate-400 font-medium text-sm">

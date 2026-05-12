@@ -49,7 +49,7 @@ exports.getUnifiedPipeline = async (req, res) => {
 // Lead Conversion: Promote Lead to Deal
 exports.convertLead = async (req, res) => {
   const { id } = req.params;
-  const { title, value, probability, expectedCloseDate, ownerId } = req.body;
+  const { title, value, probability, expectedCloseDate, ownerId } = req.body || {};
 
   try {
     const lead = await prisma.lead.findUnique({ where: { id } });
@@ -102,14 +102,28 @@ exports.updateStage = async (req, res) => {
   const { id } = req.params;
   const { stage, note } = req.body;
 
-  const STAGE_ORDER = ['DISCOVERY', 'PROPOSAL', 'NEGOTIATION', 'CONTRACT', 'CLOSED_WON', 'CLOSED_LOST', 'ON_HOLD'];
+  const STAGE_ORDER = ['DISCOVERY', 'PROPOSAL', 'NEGOTIATION', 'CONTRACT'];
   
   try {
     const deal = await prisma.deal.findUnique({ where: { id } });
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
 
-    // State machine logic (Optional: strict ordering)
-    // For now, we allow transitions but log them
+    // Strict State Machine Validation
+    if (stage === 'CLOSED_WON' && deal.stage !== 'CONTRACT') {
+      return res.status(400).json({ message: 'Invalid transition: Deals must reach the CONTRACT stage before they can be marked CLOSED_WON.' });
+    }
+
+    const isSpecialState = ['CLOSED_WON', 'CLOSED_LOST', 'ON_HOLD'].includes(stage);
+    if (!isSpecialState) {
+      const currentIndex = STAGE_ORDER.indexOf(deal.stage);
+      const newIndex = STAGE_ORDER.indexOf(stage);
+      
+      if (currentIndex !== -1 && newIndex > currentIndex + 1) {
+        return res.status(400).json({ 
+          message: `Invalid transition: Cannot skip stages. You must progress to ${STAGE_ORDER[currentIndex + 1]} first.` 
+        });
+      }
+    }
     
     const updatedDeal = await prisma.deal.update({
       where: { id },
@@ -128,6 +142,33 @@ exports.updateStage = async (req, res) => {
         note: note || `Stage moved from ${deal.stage} to ${stage}`
       }
     });
+
+    // Milestone Email Notifications
+    if (stage === 'CLOSED_WON' || stage === 'CLOSED_LOST') {
+      try {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
+        
+        const subject = stage === 'CLOSED_WON' 
+          ? `🎉 Deal Won: ${updatedDeal.title}` 
+          : `⚠️ Deal Lost: ${updatedDeal.title}`;
+          
+        const content = stage === 'CLOSED_WON'
+          ? `Great news! The deal for ${updatedDeal.title} has been marked as CLOSED WON. Total value: $${updatedDeal.value}.`
+          : `The deal for ${updatedDeal.title} has been marked as CLOSED LOST.`;
+
+        await resend.emails.send({
+          from: 'Algoleap DMS <onboarding@resend.dev>',
+          to: ['executives@algoleap.com'], // In production, route to deal owner and executives
+          subject: subject,
+          html: `<p>${content}</p><p>View details in the <a href="http://localhost:5174/deals/${id}">Deal Room</a>.</p>`
+        });
+        console.log(`[Email Alert Sent] ${subject}`);
+      } catch (emailErr) {
+        console.error('Failed to send milestone email:', emailErr.message);
+        // Do not block the stage update if email fails
+      }
+    }
 
     res.json(updatedDeal);
   } catch (error) {
