@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { uploadToSupabase } = require('../utils/upload');
 
 // Unified Pipeline: Get all Leads and Deals
 exports.getUnifiedPipeline = async (req, res) => {
@@ -107,23 +108,6 @@ exports.updateStage = async (req, res) => {
   try {
     const deal = await prisma.deal.findUnique({ where: { id } });
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
-
-    // Strict State Machine Validation
-    if (stage === 'CLOSED_WON' && deal.stage !== 'CONTRACT') {
-      return res.status(400).json({ message: 'Invalid transition: Deals must reach the CONTRACT stage before they can be marked CLOSED_WON.' });
-    }
-
-    const isSpecialState = ['CLOSED_WON', 'CLOSED_LOST', 'ON_HOLD'].includes(stage);
-    if (!isSpecialState) {
-      const currentIndex = STAGE_ORDER.indexOf(deal.stage);
-      const newIndex = STAGE_ORDER.indexOf(stage);
-      
-      if (currentIndex !== -1 && newIndex > currentIndex + 1) {
-        return res.status(400).json({ 
-          message: `Invalid transition: Cannot skip stages. You must progress to ${STAGE_ORDER[currentIndex + 1]} first.` 
-        });
-      }
-    }
     
     const updatedDeal = await prisma.deal.update({
       where: { id },
@@ -204,7 +188,11 @@ exports.getDealById = async (req, res) => {
     const deal = await prisma.deal.findUnique({
       where: { id: req.params.id },
       include: {
-        account: true,
+        account: {
+          include: {
+            contacts: true
+          }
+        },
         activities: { include: { user: { select: { fullName: true } } }, orderBy: { createdAt: 'desc' } },
         documents: true,
         stakeholders: { include: { contact: true } },
@@ -214,6 +202,84 @@ exports.getDealById = async (req, res) => {
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
     res.json(deal);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update Deal details
+exports.updateDeal = async (req, res) => {
+  const { id } = req.params;
+  const { value, probability, expectedCloseDate, description } = req.body;
+
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+
+    const updatedDeal = await prisma.deal.update({
+      where: { id },
+      data: {
+        value: value !== undefined ? value : deal.value,
+        probability: probability !== undefined ? parseInt(probability, 10) : deal.probability,
+        expectedCloseDate: expectedCloseDate !== undefined ? (expectedCloseDate ? new Date(expectedCloseDate) : null) : deal.expectedCloseDate,
+        description: description !== undefined ? description : deal.description,
+      }
+    });
+
+    await prisma.dealActivity.create({
+      data: {
+        dealId: id,
+        userId: req.user?.userId,
+        type: 'DEAL_UPDATED',
+        note: `Deal details updated.`
+      }
+    });
+
+    res.json(updatedDeal);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Upload Document
+exports.uploadDocument = async (req, res) => {
+  const { id } = req.params;
+  
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+
+    // Upload to Supabase
+    const uploadResult = await uploadToSupabase(req.file, 'deals');
+
+    // Save to Database
+    const document = await prisma.dealDocument.create({
+      data: {
+        dealId: id,
+        title: req.file.originalname,
+        fileName: uploadResult.fileName,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+        storageUrl: uploadResult.url,
+        uploadedById: req.user?.userId || 'system'
+      }
+    });
+
+    await prisma.dealActivity.create({
+      data: {
+        dealId: id,
+        userId: req.user?.userId,
+        type: 'DOCUMENT_UPLOADED',
+        note: `Document uploaded: ${req.file.originalname}`
+      }
+    });
+
+    res.status(201).json(document);
+  } catch (error) {
+    console.error('Upload Error:', error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import Modal from '../components/ui/Modal';
 import { 
   Building, 
   TrendingUp, 
@@ -29,6 +30,66 @@ const DealDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
+  const fileInputRef = useRef(null);
+  
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isStakeholderModalOpen, setIsStakeholderModalOpen] = useState(false);
+  const [isCompetitorModalOpen, setIsCompetitorModalOpen] = useState(false);
+
+  const [dealForm, setDealForm] = useState({ value: '', probability: '', expectedCloseDate: '', description: '' });
+  const [stakeholderForm, setStakeholderForm] = useState({ contactId: '', role: 'CHAMPION', notes: '' });
+  const [competitorForm, setCompetitorForm] = useState({ name: '', strength: '', weakness: '', notes: '' });
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await api.post(`/deals/${id}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      fetchDeal();
+    } catch (err) {
+      alert('Upload failed');
+    }
+  };
+
+  const handleUpdateDeal = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/deals/${id}`, dealForm);
+      setIsUpdateModalOpen(false);
+      fetchDeal();
+    } catch (err) {
+      alert('Update failed');
+    }
+  };
+
+  const handleAddStakeholder = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post(`/deals/${id}/stakeholders`, stakeholderForm);
+      setIsStakeholderModalOpen(false);
+      setStakeholderForm({ contactId: '', role: 'CHAMPION', notes: '' });
+      fetchDeal();
+    } catch (err) {
+      alert('Add stakeholder failed');
+    }
+  };
+
+  const handleAddCompetitor = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post(`/deals/${id}/competitors`, competitorForm);
+      setIsCompetitorModalOpen(false);
+      setCompetitorForm({ name: '', strength: '', weakness: '', notes: '' });
+      fetchDeal();
+    } catch (err) {
+      alert('Add competitor failed');
+    }
+  };
+
   useEffect(() => {
     fetchDeal();
   }, [id]);
@@ -49,7 +110,8 @@ const DealDetails = () => {
       await api.post(`/deals/${id}/stage`, { stage: newStage });
       fetchDeal();
     } catch (err) {
-      alert('Failed to update stage');
+      const msg = err.response?.data?.message || 'Failed to update stage';
+      alert(msg);
     }
   };
 
@@ -87,6 +149,7 @@ const DealDetails = () => {
   ];
 
   return (
+    <>
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-8 py-8">
@@ -195,9 +258,12 @@ const DealDetails = () => {
                     <FileText size={20} className="text-[#358b49]" />
                     <h3 className="font-bold text-slate-900">Signed Artifacts & Proposals</h3>
                   </div>
-                  <button className="text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-100 transition-all">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-100 transition-all">
                     <Plus size={14} /> Upload to Deal Room
                   </button>
+                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                 </div>
                 <div className="p-8 space-y-4">
                   {deal.documents?.length > 0 ? deal.documents.map((doc) => (
@@ -233,7 +299,9 @@ const DealDetails = () => {
                        <Users size={20} className="text-[#358b49]" />
                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">Stakeholder Matrix</h3>
                     </div>
-                    <button className="text-xs font-bold text-[#358b49] bg-emerald-50 px-4 py-2 rounded-xl">
+                    <button 
+                       onClick={() => setIsStakeholderModalOpen(true)}
+                       className="text-xs font-bold text-[#358b49] bg-emerald-50 px-4 py-2 rounded-xl">
                        Map Stakeholder
                     </button>
                  </div>
@@ -288,7 +356,17 @@ const DealDetails = () => {
             {/* Quick Actions */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 space-y-4">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Quick Actions</h4>
-              <button className="w-full py-4 bg-[#358b49] text-white rounded-2xl font-bold text-sm shadow-lg shadow-green-900/10 hover:bg-[#2a7039] transition-all flex items-center justify-center gap-2">
+              <button 
+                onClick={() => {
+                  setDealForm({
+                    value: deal.value || '',
+                    probability: deal.probability || '',
+                    expectedCloseDate: deal.expectedCloseDate ? deal.expectedCloseDate.split('T')[0] : '',
+                    description: deal.description || ''
+                  });
+                  setIsUpdateModalOpen(true);
+                }}
+                className="w-full py-4 bg-[#358b49] text-white rounded-2xl font-bold text-sm shadow-lg shadow-green-900/10 hover:bg-[#2a7039] transition-all flex items-center justify-center gap-2">
                 <TrendingUp size={18} />
                 <span>Update Probability</span>
               </button>
@@ -302,7 +380,9 @@ const DealDetails = () => {
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
               <div className="flex justify-between items-center mb-6">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Competitors</h4>
-                <button className="text-[#358b49] hover:bg-emerald-50 p-1 rounded-lg transition-colors">
+                <button 
+                  onClick={() => setIsCompetitorModalOpen(true)}
+                  className="text-[#358b49] hover:bg-emerald-50 p-1 rounded-lg transition-colors">
                   <Plus size={16} />
                 </button>
               </div>
@@ -328,6 +408,85 @@ const DealDetails = () => {
         </div>
       </div>
     </div>
+
+      {/* Update Deal Modal */}
+      <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title="Update Deal">
+        <form onSubmit={handleUpdateDeal} className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Value ($)</label>
+              <input type="number" value={dealForm.value} onChange={e => setDealForm({...dealForm, value: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Probability (%)</label>
+              <input type="number" value={dealForm.probability} onChange={e => setDealForm({...dealForm, probability: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-2">Expected Close Date</label>
+              <input type="date" value={dealForm.expectedCloseDate} onChange={e => setDealForm({...dealForm, expectedCloseDate: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+              <textarea value={dealForm.description} onChange={e => setDealForm({...dealForm, description: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" rows={4} />
+            </div>
+          </div>
+          <button type="submit" className="w-full py-4 bg-[#358b49] text-white rounded-xl font-bold">Save Changes</button>
+        </form>
+      </Modal>
+
+      {/* Add Stakeholder Modal */}
+      <Modal isOpen={isStakeholderModalOpen} onClose={() => setIsStakeholderModalOpen(false)} title="Map Stakeholder">
+        <form onSubmit={handleAddStakeholder} className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Contact</label>
+            <select required value={stakeholderForm.contactId} onChange={e => setStakeholderForm({...stakeholderForm, contactId: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200">
+              <option value="">Select Contact...</option>
+              {deal?.account?.contacts?.map(c => (
+                <option key={c.id} value={c.id}>{c.fullName} - {c.title || 'No Title'}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Role in Deal</label>
+            <select value={stakeholderForm.role} onChange={e => setStakeholderForm({...stakeholderForm, role: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200">
+              <option value="CHAMPION">Champion</option>
+              <option value="DECISION_MAKER">Decision Maker</option>
+              <option value="INFLUENCER">Influencer</option>
+              <option value="BLOCKER">Blocker</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Notes</label>
+            <textarea value={stakeholderForm.notes} onChange={e => setStakeholderForm({...stakeholderForm, notes: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" rows={3} />
+          </div>
+          <button type="submit" className="w-full py-4 bg-[#358b49] text-white rounded-xl font-bold">Add Stakeholder</button>
+        </form>
+      </Modal>
+
+      {/* Add Competitor Modal */}
+      <Modal isOpen={isCompetitorModalOpen} onClose={() => setIsCompetitorModalOpen(false)} title="Add Competitor">
+        <form onSubmit={handleAddCompetitor} className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Competitor Name</label>
+            <input required type="text" value={competitorForm.name} onChange={e => setCompetitorForm({...competitorForm, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Strengths</label>
+            <input type="text" value={competitorForm.strength} onChange={e => setCompetitorForm({...competitorForm, strength: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Weaknesses</label>
+            <input type="text" value={competitorForm.weakness} onChange={e => setCompetitorForm({...competitorForm, weakness: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Additional Notes</label>
+            <textarea value={competitorForm.notes} onChange={e => setCompetitorForm({...competitorForm, notes: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200" rows={3} />
+          </div>
+          <button type="submit" className="w-full py-4 bg-[#358b49] text-white rounded-xl font-bold">Add Competitor</button>
+        </form>
+      </Modal>
+
+    </>
   );
 };
 
