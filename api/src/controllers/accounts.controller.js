@@ -20,11 +20,21 @@ exports.getAllAccounts = async (req, res) => {
   }
 };
 
-// Get single account
+// Get single account with contacts
 exports.getAccountById = async (req, res) => {
   try {
     const account = await prisma.account.findUnique({
-      where: { id: req.params.id }
+      where: { id: req.params.id },
+      include: {
+        contacts: {
+          orderBy: { createdAt: 'asc' }
+        },
+        leads: {
+          select: { id: true, title: true, stage: true, value: true },
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        }
+      }
     });
     
     if (!account) return res.status(404).json({ message: 'Account not found' });
@@ -47,7 +57,20 @@ exports.createAccount = async (req, res) => {
       status,
       region, 
       ltv, 
-      ownerInitials 
+      ownerInitials,
+      // CRM profile fields
+      website,
+      description,
+      foundedYear,
+      specialties,
+      linkedin,
+      twitter,
+      instagram,
+      contactEmail,
+      contactPhone,
+      contactPerson,
+      location,
+      size
     } = req.body;
     
     const account = await prisma.account.create({
@@ -61,7 +84,19 @@ exports.createAccount = async (req, res) => {
         status: status || 'Active',
         region,
         ltv,
-        ownerInitials
+        ownerInitials,
+        website,
+        description,
+        foundedYear,
+        specialties,
+        linkedin,
+        twitter,
+        instagram,
+        contactEmail,
+        contactPhone,
+        contactPerson,
+        location,
+        size
       }
     });
     
@@ -74,9 +109,11 @@ exports.createAccount = async (req, res) => {
 // Update account
 exports.updateAccount = async (req, res) => {
   try {
+    // Strip any relational fields that can't be directly set
+    const { contacts, leads, deals, ...data } = req.body;
     const account = await prisma.account.update({
       where: { id: req.params.id },
-      data: req.body
+      data
     });
     res.json(account);
   } catch (error) {

@@ -83,6 +83,20 @@ model Account {
   ownerInitials  String?    @map("owner_initials")
   createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
 
+  // CRM Profile Fields (merged from crm-app)
+  website        String?
+  description    String?
+  foundedYear    String?   @map("founded_year")
+  specialties    String?
+  linkedin       String?
+  twitter        String?
+  instagram      String?
+  contactEmail   String?   @map("contact_email")
+  contactPhone   String?   @map("contact_phone")
+  contactPerson  String?   @map("contact_person")
+  location       String?
+  size           String?
+
   // Relations
   contacts       Contact[]
   leads          Lead[]
@@ -104,6 +118,8 @@ model Contact {
   location       String?
   department     String?
   reportsTo      String?   @map("reports_to")
+  since          String?
+  notes          String?
   ownerInitials  String?    @map("owner_initials")
   createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
 

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Leads from './pages/Leads';
 import Accounts from './pages/Accounts';
+import CompanyProfile from './pages/CompanyProfile';
 import Contacts from './pages/Contacts';
 import UsersRoles from './pages/UsersRoles';
 import Permissions from './pages/Permissions';
@@ -12,6 +13,7 @@ import LeadDetails from './pages/LeadDetails';
 import Pipeline from './pages/Pipeline';
 import DealDetails from './pages/DealDetails';
 import Forecast from './pages/Forecast';
+import Team from './pages/Team';
 import { ShieldOff } from 'lucide-react';
 
 const Layout = ({ children }) => (
@@ -75,7 +77,9 @@ function App() {
         <Route path="/leads/:id" element={<ProtectedRoute><LeadDetails /></ProtectedRoute>} />
         <Route path="/deals/:id" element={<ProtectedRoute><DealDetails /></ProtectedRoute>} />
         <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
+        <Route path="/accounts/:id" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
         <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
+        <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
         
         {/* Administration Routes - Administrator only */}
         <Route path="/users-roles" element={<AdminRoute><UsersRoles /></AdminRoute>} />

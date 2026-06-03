@@ -141,13 +141,16 @@ exports.updateStage = async (req, res) => {
           ? `Great news! The deal for ${updatedDeal.title} has been marked as CLOSED WON. Total value: $${updatedDeal.value}.`
           : `The deal for ${updatedDeal.title} has been marked as CLOSED LOST.`;
 
+        const executiveEmail = process.env.EXECUTIVE_EMAIL || 'executives@algoleap.com';
+        const frontendUrl = process.env.APP_FRONTEND_URL || 'http://localhost:5173';
+
         await resend.emails.send({
           from: 'Algoleap DMS <onboarding@resend.dev>',
-          to: ['executives@algoleap.com'], // In production, route to deal owner and executives
+          to: [executiveEmail],
           subject: subject,
-          html: `<p>${content}</p><p>View details in the <a href="http://localhost:5174/deals/${id}">Deal Room</a>.</p>`
+          html: `<p>${content}</p><p>View details in the <a href="${frontendUrl}/deals/${id}">Deal Room</a>.</p>`
         });
-        console.log(`[Email Alert Sent] ${subject}`);
+        console.log(`[Email Alert Sent] ${subject} to ${executiveEmail}`);
       } catch (emailErr) {
         console.error('Failed to send milestone email:', emailErr.message);
         // Do not block the stage update if email fails

@@ -13,7 +13,14 @@ const AccountForm = ({ onSuccess, onClose }) => {
     employeesCount: '',
     ownership: '',
     status: 'Customer',
-    region: 'EMEA' // Hidden or kept for backward compatibility if needed
+    region: 'EMEA', // Hidden or kept for backward compatibility if needed
+    website: '',
+    foundedYear: '',
+    description: '',
+    specialties: '',
+    linkedin: '',
+    twitter: '',
+    instagram: ''
   });
 
   const handleChange = (e) => {
@@ -77,14 +84,44 @@ const AccountForm = ({ onSuccess, onClose }) => {
           />
         </div>
 
-        {/* Row 2: Account address */}
+        {/* Row 2: Website & Founded Year */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Website URL
+            </label>
+            <input 
+              name="website" 
+              type="url" 
+              placeholder="e.g. https://www.dhl.com" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.website} 
+              onChange={handleChange} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Founded Year
+            </label>
+            <input 
+              name="foundedYear" 
+              type="text" 
+              placeholder="e.g. 1969" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.foundedYear} 
+              onChange={handleChange} 
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Account address */}
         <div>
           <label className="block text-sm font-bold text-slate-800 mb-2">
             Account address
           </label>
           <textarea 
             name="address" 
-            rows="4" 
+            rows="3" 
             placeholder="Headquarters address, street, city, country..." 
             className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700 resize-none" 
             value={formData.address} 
@@ -92,7 +129,22 @@ const AccountForm = ({ onSuccess, onClose }) => {
           ></textarea>
         </div>
 
-        {/* Row 3: Revenue & Employees */}
+        {/* Row 4: About the Company */}
+        <div>
+          <label className="block text-sm font-bold text-slate-800 mb-2">
+            About the Company
+          </label>
+          <textarea 
+            name="description" 
+            rows="3" 
+            placeholder="Brief description of the company business, specialties, etc..." 
+            className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700 resize-none" 
+            value={formData.description} 
+            onChange={handleChange}
+          ></textarea>
+        </div>
+
+        {/* Row 5: Revenue & Employees */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-2">
@@ -122,7 +174,7 @@ const AccountForm = ({ onSuccess, onClose }) => {
           </div>
         </div>
 
-        {/* Row 4: Status & Ownership */}
+        {/* Row 6: Status & Ownership */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-2">
@@ -158,7 +210,7 @@ const AccountForm = ({ onSuccess, onClose }) => {
           </div>
         </div>
 
-        {/* Row 5: Industry */}
+        {/* Row 7: Industry & Specialties */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-2">
@@ -180,7 +232,65 @@ const AccountForm = ({ onSuccess, onClose }) => {
               <option value="Retail & E-commerce">Retail & E-commerce</option>
               <option value="Energy & Utilities">Energy & Utilities</option>
               <option value="Education / EdTech">Education / EdTech</option>
+              <option value="Chemicals">Chemicals</option>
+              <option value="Real Estate">Real Estate</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Specialties
+            </label>
+            <input 
+              name="specialties" 
+              type="text" 
+              placeholder="e.g. Water Treatment, Logistics, SaaS" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.specialties} 
+              onChange={handleChange} 
+            />
+          </div>
+        </div>
+
+        {/* Row 8: Social Media Links */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              LinkedIn URL
+            </label>
+            <input 
+              name="linkedin" 
+              type="url" 
+              placeholder="e.g. https://linkedin.com/company/dhl" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.linkedin} 
+              onChange={handleChange} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              X (Twitter) URL
+            </label>
+            <input 
+              name="twitter" 
+              type="url" 
+              placeholder="e.g. https://x.com/dhl" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.twitter} 
+              onChange={handleChange} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Instagram URL
+            </label>
+            <input 
+              name="instagram" 
+              type="url" 
+              placeholder="e.g. https://instagram.com/dhl" 
+              className="w-full bg-white border border-slate-200 px-4 py-3 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-700" 
+              value={formData.instagram} 
+              onChange={handleChange} 
+            />
           </div>
         </div>
 

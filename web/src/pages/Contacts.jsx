@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import Modal from '../components/ui/Modal';
 import ContactForm from '../components/forms/ContactForm';
-import { Plus } from 'lucide-react';
+import { Plus, GitBranch } from 'lucide-react';
 
 const Contacts = () => {
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -78,9 +80,20 @@ const Contacts = () => {
                   <td className="px-6 py-5">
                     <span className="text-sm text-slate-700 w-32 inline-block break-words">{contact.title || contact.department || '-'}</span>
                   </td>
-                  <td className="px-6 py-5">
-                    <span className="text-sm font-bold text-slate-900 w-24 inline-block break-words">{contact.account?.name || '-'}</span>
-                  </td>
+                   <td className="px-6 py-5">
+                     <div className="flex items-center gap-2">
+                       <span className="text-sm font-bold text-slate-900 w-24 inline-block break-words">{contact.account?.name || '-'}</span>
+                       {contact.account?.name && (
+                         <button
+                           onClick={() => navigate('/team', { state: { contactName: contact.fullName, contactData: { ...contact, company: contact.account.name } } })}
+                           title="View Org Chart"
+                           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                         >
+                           <GitBranch size={10} /> Org Chart
+                         </button>
+                       )}
+                     </div>
+                   </td>
                   <td className="px-6 py-5">
                     <span className="text-sm text-slate-600">{contact.email || '-'}</span>
                   </td>

@@ -3,11 +3,15 @@ const prisma = new PrismaClient();
 
 exports.getAllContacts = async (req, res) => {
   try {
+    const { accountId } = req.query;
     const contacts = await prisma.contact.findMany({
+      where: {
+        ...(accountId && { accountId })
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         account: {
-          select: { name: true }
+          select: { id: true, name: true }
         }
       }
     });
@@ -23,7 +27,7 @@ exports.getContactById = async (req, res) => {
       where: { id: req.params.id },
       include: {
         account: {
-          select: { name: true }
+          select: { id: true, name: true }
         }
       }
     });
@@ -53,7 +57,10 @@ exports.createContact = async (req, res) => {
     if (finalAccountId) dataToSave.accountId = finalAccountId;
 
     const contact = await prisma.contact.create({
-      data: dataToSave
+      data: dataToSave,
+      include: {
+        account: { select: { id: true, name: true } }
+      }
     });
     res.status(201).json(contact);
   } catch (error) {
@@ -63,9 +70,14 @@ exports.createContact = async (req, res) => {
 
 exports.updateContact = async (req, res) => {
   try {
+    // Strip relational fields that can't be directly set
+    const { account, leads, stakeholderIn, ...data } = req.body;
     const contact = await prisma.contact.update({
       where: { id: req.params.id },
-      data: req.body
+      data,
+      include: {
+        account: { select: { id: true, name: true } }
+      }
     });
     res.json(contact);
   } catch (error) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import Modal from '../components/ui/Modal';
 import AccountForm from '../components/forms/AccountForm';
@@ -104,7 +105,7 @@ const Accounts = () => {
                                  {account.name?.charAt(0)}
                               </div>
                               <div>
-                                 <h4 className="font-bold text-slate-900 tracking-tight leading-tight mb-1">{account.name}</h4>
+                                 <Link to={`/accounts/${account.id}`} className="font-bold text-slate-900 tracking-tight leading-tight mb-1 hover:text-emerald-700 hover:underline block">{account.name}</Link>
                                  <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
                                     <MapPin size={10} /> {account.address || account.region || 'Global HQ'}
                                  </p>

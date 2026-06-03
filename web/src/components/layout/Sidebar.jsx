@@ -9,7 +9,8 @@ import {
   UserPlus,
   KeyRound,
   Columns,
-  TrendingUp
+  TrendingUp,
+  GitBranch
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -29,6 +30,7 @@ const Sidebar = () => {
     { name: 'Leads', icon: Target, path: '/leads' },
     { name: 'Accounts', icon: Building2, path: '/accounts' },
     { name: 'Contacts', icon: Users, path: '/contacts' },
+    { name: 'Org Chart', icon: GitBranch, path: '/team' },
   ];
 
   // Role badge color mapping

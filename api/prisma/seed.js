@@ -19,6 +19,7 @@ async function main() {
     { key: 'deals.move_stage', description: 'Move Deal Stage', group: 'Deal Management' },
     { key: 'deals.close_won', description: 'Mark Deal as Won', group: 'Deal Management' },
     { key: 'deals.delete', description: 'Delete Deal', group: 'Deal Management' },
+    { key: 'deals.export_csv', description: 'Export Pipeline to CSV', group: 'Deal Management' },
     
     // Financials
     { key: 'financial:view_value', description: 'View Deal Value', group: 'Financial Transparency' },
@@ -74,6 +75,7 @@ async function main() {
       getPermId('deals.view_all'),
       getPermId('deals.create'),
       getPermId('deals.move_stage'),
+      getPermId('deals.export_csv'),
       getPermId('crm:account_create'),
       getPermId('crm:contact_edit')
     ],
