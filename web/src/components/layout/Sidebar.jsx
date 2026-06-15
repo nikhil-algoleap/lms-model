@@ -31,7 +31,6 @@ const Sidebar = () => {
     { name: 'Contacts', icon: Users, path: '/contacts' },
     { name: 'Pipeline', icon: Columns, path: '/pipeline' },
     { name: 'Forecast', icon: TrendingUp, path: '/forecast' },
-    { name: 'Org Chart', icon: GitBranch, path: '/team' },
   ];
 
   // Role badge color mapping
