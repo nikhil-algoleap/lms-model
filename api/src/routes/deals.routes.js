@@ -8,6 +8,7 @@ router.use(authenticateToken); // Protect all deal routes
 
 router.get('/pipeline', dealsController.getUnifiedPipeline);
 router.get('/forecast', dealsController.getForecast);
+router.post('/', dealsController.createDeal);
 router.get('/:id', dealsController.getDealById);
 router.put('/:id', dealsController.updateDeal);
 router.post('/convert/:id', dealsController.convertLead);

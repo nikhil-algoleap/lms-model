@@ -33,6 +33,11 @@ exports.getAccountById = async (req, res) => {
           select: { id: true, title: true, stage: true, value: true },
           orderBy: { createdAt: 'desc' },
           take: 10
+        },
+        deals: {
+          select: { id: true, title: true, stage: true, value: true, expectedCloseDate: true },
+          orderBy: { createdAt: 'desc' },
+          take: 10
         }
       }
     });

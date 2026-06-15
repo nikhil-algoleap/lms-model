@@ -4,13 +4,15 @@ import api from '../api/client';
 import {
   Mail, Phone, MapPin, Globe, Edit3, Users, Building,
   Building2, Briefcase, ExternalLink, ArrowLeft, Calendar,
-  Star, GitBranch, Loader2,
+  Star, GitBranch, Loader2, Plus,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
+import LeadForm from '../components/forms/LeadForm';
+import DealForm from '../components/forms/DealForm';
 
 // ─── Social Icons ─────────────────────────────────────────────────────────────
 const LinkedInIcon = () => (
@@ -101,6 +103,8 @@ export default function CompanyProfile() {
   const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -158,6 +162,7 @@ export default function CompanyProfile() {
 
   const contacts = account.contacts || [];
   const openLeads = account.leads || [];
+  const activeDeals = account.deals || [];
   const specialties = account.specialties?.split(',').map(s => s.trim()).filter(Boolean) || [];
   const websiteLabel = account.website?.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const addressMapsUrl = account.address
@@ -287,11 +292,23 @@ export default function CompanyProfile() {
           </Card>
 
           {/* Open Leads */}
-          {openLeads.length > 0 && (
-            <Card className="p-0">
-              <SectionHeader icon={Star} eyebrow="Pipeline" title={`Open Leads (${openLeads.length})`} />
-              <div className="divide-y divide-slate-100">
-                {openLeads.slice(0, 5).map(lead => (
+          <Card className="p-0">
+            <SectionHeader 
+              icon={Star} 
+              eyebrow="Pipeline" 
+              title="Open Leads" 
+              action={
+                <button 
+                  onClick={() => setIsLeadModalOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 transition-colors"
+                >
+                  <Plus size={12} /> New Lead
+                </button>
+              }
+            />
+            <div className="divide-y divide-slate-100">
+              {openLeads.length > 0 ? (
+                openLeads.slice(0, 5).map(lead => (
                   <div key={lead.id} className="flex items-center justify-between gap-3 p-4 hover:bg-blue-50/40 cursor-pointer transition-colors" onClick={() => navigate(`/leads/${lead.id}`)}>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-900">{lead.title}</p>
@@ -299,10 +316,51 @@ export default function CompanyProfile() {
                     </div>
                     <Badge>{lead.stage}</Badge>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
+                ))
+              ) : (
+                <div className="p-5 text-center text-xs text-slate-400 font-medium">
+                  No active leads for this account.
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Active Deals */}
+          <Card className="p-0">
+            <SectionHeader 
+              icon={Briefcase} 
+              eyebrow="Revenue Pipeline" 
+              title="Active Deals" 
+              action={
+                <button 
+                  onClick={() => setIsDealModalOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 transition-colors"
+                >
+                  <Plus size={12} /> New Deal
+                </button>
+              }
+            />
+            <div className="divide-y divide-slate-100">
+              {activeDeals.length > 0 ? (
+                activeDeals.slice(0, 5).map(deal => (
+                  <div key={deal.id} className="flex items-center justify-between gap-3 p-4 hover:bg-emerald-50/30 cursor-pointer transition-colors" onClick={() => navigate(`/deals/${deal.id}`)}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">{deal.title}</p>
+                      <p className="text-xs text-slate-400">
+                        ${parseFloat(deal.value || 0).toLocaleString()} 
+                        {deal.expectedCloseDate && ` · Close: ${new Date(deal.expectedCloseDate).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <Badge>{deal.stage}</Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="p-5 text-center text-xs text-slate-400 font-medium">
+                  No active deals mapped.
+                </div>
+              )}
+            </div>
+          </Card>
         </aside>
       </div>
 
@@ -325,13 +383,17 @@ export default function CompanyProfile() {
               const name = c.fullName || `${c.firstName || ''} ${c.lastName || ''}`.trim();
               const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
               return (
-                <div key={c.id} className="group p-5 transition-colors hover:bg-blue-50/50">
+                <div 
+                  key={c.id} 
+                  onClick={() => navigate('/contacts', { state: { highlightContactId: c.id } })}
+                  className="group p-5 transition-colors hover:bg-emerald-50/40 cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-sm font-black text-blue-700">
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-sm font-black text-blue-700 group-hover:scale-105 transition-transform">
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-900">{name}</p>
+                      <p className="truncate text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">{name}</p>
                       <p className="truncate text-xs font-medium text-slate-500">{c.title || c.role || 'Contact'}</p>
                     </div>
                   </div>
@@ -406,6 +468,23 @@ export default function CompanyProfile() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Create Lead Modal */}
+      <Modal isOpen={isLeadModalOpen} onClose={() => setIsLeadModalOpen(false)} hideHeader={true}>
+        <LeadForm 
+          prefilledAccountName={account.name} 
+          onSuccess={() => { setIsLeadModalOpen(false); fetchAccount(); }} 
+        />
+      </Modal>
+
+      {/* Create Deal Modal */}
+      <Modal isOpen={isDealModalOpen} onClose={() => setIsDealModalOpen(false)} hideHeader={true}>
+        <DealForm 
+          prefilledAccountId={account.id} 
+          prefilledAccountName={account.name} 
+          onSuccess={() => { setIsDealModalOpen(false); fetchAccount(); }} 
+        />
       </Modal>
     </div>
   );

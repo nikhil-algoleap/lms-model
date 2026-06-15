@@ -14,6 +14,7 @@ import Pipeline from './pages/Pipeline';
 import DealDetails from './pages/DealDetails';
 import Forecast from './pages/Forecast';
 import Team from './pages/Team';
+// No SystemGuide import needed
 import { ShieldOff } from 'lucide-react';
 
 const Layout = ({ children }) => (

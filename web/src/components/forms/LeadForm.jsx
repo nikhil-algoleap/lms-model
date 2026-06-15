@@ -8,7 +8,7 @@ import {
   Upload
 } from 'lucide-react';
 
-const LeadForm = ({ onSuccess }) => {
+const LeadForm = ({ onSuccess, prefilledAccountName }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [accounts, setAccounts] = useState([]);
@@ -17,7 +17,7 @@ const LeadForm = ({ onSuccess }) => {
 
   const [formData, setFormData] = useState({
     title: '',
-    accountName: '',
+    accountName: prefilledAccountName || '',
     primaryContact: '',
     serviceLine: '',
     practiceArea: '',
@@ -120,7 +120,7 @@ const LeadForm = ({ onSuccess }) => {
              <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Account <span className="text-rose-500">*</span></label>
                 <div className="relative">
-                  <select required className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})}>
+                  <select required disabled={!!prefilledAccountName} className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium disabled:bg-slate-50 disabled:text-slate-400" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})}>
                     <option value="">Select account...</option>
                     <option value="ADP">ADP</option>
                     <option value="CBRE">CBRE</option>
@@ -131,6 +131,9 @@ const LeadForm = ({ onSuccess }) => {
                     <option value="KPMG">KPMG</option>
                     <option value="Maersk">Maersk</option>
                     <option value="Thomson Reuters">Thomson Reuters</option>
+                    {prefilledAccountName && !["ADP", "CBRE", "Cargill", "Cornerstone", "DHL", "IDP Education", "KPMG", "Maersk", "Thomson Reuters"].includes(prefilledAccountName) && (
+                      <option value={prefilledAccountName}>{prefilledAccountName}</option>
+                    )}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 </div>

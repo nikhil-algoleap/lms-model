@@ -29,6 +29,7 @@ const DealDetails = () => {
   const [deal, setDeal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [contacts, setContacts] = useState([]);
 
   const fileInputRef = useRef(null);
   
@@ -92,7 +93,17 @@ const DealDetails = () => {
 
   useEffect(() => {
     fetchDeal();
+    fetchAllContacts();
   }, [id]);
+
+  const fetchAllContacts = async () => {
+    try {
+      const res = await api.get('/contacts');
+      setContacts(res.data);
+    } catch (err) {
+      console.error('Error fetching contacts:', err);
+    }
+  };
 
   const fetchDeal = async () => {
     try {
@@ -441,8 +452,10 @@ const DealDetails = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">Contact</label>
             <select required value={stakeholderForm.contactId} onChange={e => setStakeholderForm({...stakeholderForm, contactId: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-slate-200">
               <option value="">Select Contact...</option>
-              {deal?.account?.contacts?.map(c => (
-                <option key={c.id} value={c.id}>{c.fullName} - {c.title || 'No Title'}</option>
+              {contacts.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.fullName} ({c.account?.name || 'No Account'}) - {c.title || 'No Title'}
+                </option>
               ))}
             </select>
           </div>

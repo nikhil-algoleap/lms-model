@@ -348,3 +348,42 @@ exports.addCompetitor = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.createDeal = async (req, res) => {
+  const { title, accountId, stage, value, probability, expectedCloseDate, description } = req.body;
+  try {
+    let finalAccountId = accountId;
+    if (req.body.accountName && !finalAccountId) {
+      const acc = await prisma.account.findFirst({ where: { name: req.body.accountName } });
+      if (acc) {
+        finalAccountId = acc.id;
+      }
+    }
+
+    const deal = await prisma.deal.create({
+      data: {
+        title,
+        accountId: finalAccountId,
+        stage: stage || 'DISCOVERY',
+        value: value ? parseFloat(value) : 0,
+        probability: probability ? parseInt(probability, 10) : 10,
+        expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
+        description,
+        ownerId: req.user?.userId
+      }
+    });
+
+    await prisma.dealActivity.create({
+      data: {
+        dealId: deal.id,
+        userId: req.user?.userId,
+        type: 'DEAL_CREATED',
+        note: `Deal created directly for account.`
+      }
+    });
+
+    res.status(201).json(deal);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

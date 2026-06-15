@@ -12,6 +12,13 @@ exports.getAllContacts = async (req, res) => {
       include: {
         account: {
           select: { id: true, name: true }
+        },
+        stakeholderIn: {
+          include: {
+            deal: {
+              select: { id: true, title: true }
+            }
+          }
         }
       }
     });
@@ -28,6 +35,13 @@ exports.getContactById = async (req, res) => {
       include: {
         account: {
           select: { id: true, name: true }
+        },
+        stakeholderIn: {
+          include: {
+            deal: {
+              select: { id: true, title: true }
+            }
+          }
         }
       }
     });
