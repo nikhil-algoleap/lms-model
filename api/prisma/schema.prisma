@@ -138,6 +138,10 @@ model Lead {
   account         Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   contactId       String?   @map("contact_id") @db.Uuid
   contact         Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  firstName       String?   @map("first_name")
+  lastName        String?   @map("last_name")
+  industry        String?
+  leadStatus      String?   @default("NEW") @map("lead_status")
   serviceLine     String?   @map("service_line")
   deliveryFormat  String?   @map("delivery_format")
   value           String?

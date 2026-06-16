@@ -71,7 +71,11 @@ exports.createLead = async (req, res) => {
       clientManager,
       description,
       accountName, // Catch legacy string
-      primaryContact // Catch legacy string
+      primaryContact, // Catch legacy string
+      firstName,
+      lastName,
+      industry,
+      leadStatus
     } = req.body;
 
     let finalAccountId = accountId || accountName;
@@ -99,6 +103,10 @@ exports.createLead = async (req, res) => {
         title,
         accountId: finalAccountId || null,
         contactId: finalContactId || null,
+        firstName,
+        lastName,
+        industry,
+        leadStatus: leadStatus || 'NEW',
         value: value ? String(value) : null,
         probability: probability ? parseInt(probability) : 0,
         dueDate: dueDate ? new Date(dueDate) : null,

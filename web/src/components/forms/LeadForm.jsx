@@ -19,6 +19,10 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
     title: '',
     accountName: prefilledAccountName || '',
     primaryContact: '',
+    firstName: '',
+    lastName: '',
+    industry: '',
+    leadStatus: 'NEW',
     serviceLine: '',
     practiceArea: '',
     deliveryFormat: '',
@@ -118,6 +122,29 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
 
           <div className="grid grid-cols-2 gap-10">
              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">First name</label>
+                <input 
+                  type="text" 
+                  placeholder="First name"
+                  className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Last name</label>
+                <input 
+                  type="text" 
+                  placeholder="Last name"
+                  className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                />
+             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10">
+             <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Account</label>
                 <div className="relative">
                   <select disabled={!!prefilledAccountName} className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium disabled:bg-slate-50 disabled:text-slate-400" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})}>
@@ -148,6 +175,34 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
                     <option value="Jessica Tan">Jessica Tan (Thomson Reuters)</option>
                     <option value="John Doe">John Doe (CBRE)</option>
                     <option value="Alice Smith">Alice Smith (Cargill)</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                </div>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10">
+             <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Industry</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g., Logistics, Banking, Healthcare"
+                  className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                  value={formData.industry}
+                  onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Leads source</label>
+                <div className="relative">
+                  <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.source} onChange={(e) => setFormData({...formData, source: e.target.value})}>
+                    <option value="Existing Client">Existing Client</option>
+                    <option value="Referral">Referral</option>
+                    <option value="Website">Website</option>
+                    <option value="Cold Outreach">Cold Outreach</option>
+                    <option value="Event/Conference">Event/Conference</option>
+                    <option value="Partner">Partner</option>
+                    <option value="Other">Other</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 </div>
@@ -242,6 +297,19 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
                     <option value="Proposal">Proposal</option>
                     <option value="Negotiation">Negotiation</option>
                     <option value="Closed Won">Closed Won</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                </div>
+             </div>
+             <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Lead status</label>
+                <div className="relative">
+                  <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.leadStatus} onChange={(e) => setFormData({...formData, leadStatus: e.target.value})}>
+                    <option value="NEW">New</option>
+                    <option value="CONTACTED">Contacted</option>
+                    <option value="QUALIFIED">Qualified</option>
+                    <option value="UNQUALIFIED">Unqualified</option>
+                    <option value="LOST">Lost</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 </div>
