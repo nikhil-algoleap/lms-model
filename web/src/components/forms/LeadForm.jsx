@@ -118,9 +118,9 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
 
           <div className="grid grid-cols-2 gap-10">
              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Account <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-slate-700">Account</label>
                 <div className="relative">
-                  <select required disabled={!!prefilledAccountName} className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium disabled:bg-slate-50 disabled:text-slate-400" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})}>
+                  <select disabled={!!prefilledAccountName} className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium disabled:bg-slate-50 disabled:text-slate-400" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})}>
                     <option value="">Select account...</option>
                     <option value="ADP">ADP</option>
                     <option value="CBRE">CBRE</option>
