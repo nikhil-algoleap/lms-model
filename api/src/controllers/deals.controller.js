@@ -104,14 +104,14 @@ exports.updateStage = async (req, res) => {
   const { stage, note } = req.body;
 
   const STAGE_ORDER = ['DISCOVERY', 'PROPOSAL', 'NEGOTIATION', 'CONTRACT'];
-  
+
   try {
     const deal = await prisma.deal.findUnique({ where: { id } });
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
-    
+
     const updatedDeal = await prisma.deal.update({
       where: { id },
-      data: { 
+      data: {
         stage,
         // Auto-update probability based on stage if not provided
         probability: stage === 'CLOSED_WON' ? 100 : (stage === 'CLOSED_LOST' ? 0 : undefined)
@@ -132,11 +132,11 @@ exports.updateStage = async (req, res) => {
       try {
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
-        
-        const subject = stage === 'CLOSED_WON' 
-          ? `🎉 Deal Won: ${updatedDeal.title}` 
+
+        const subject = stage === 'CLOSED_WON'
+          ? `🎉 Deal Won: ${updatedDeal.title}`
           : `⚠️ Deal Lost: ${updatedDeal.title}`;
-          
+
         const content = stage === 'CLOSED_WON'
           ? `Great news! The deal for ${updatedDeal.title} has been marked as CLOSED WON. Total value: $${updatedDeal.value}.`
           : `The deal for ${updatedDeal.title} has been marked as CLOSED LOST.`;
@@ -173,7 +173,7 @@ exports.getForecast = async (req, res) => {
     const forecast = deals.reduce((acc, deal) => {
       const val = parseFloat(deal.value || 0);
       const weighted = val * (deal.probability / 100);
-      
+
       acc.totalValue += val;
       acc.weightedValue += weighted;
       return acc;
@@ -246,7 +246,7 @@ exports.updateDeal = async (req, res) => {
 // Upload Document
 exports.uploadDocument = async (req, res) => {
   const { id } = req.params;
-  
+
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }

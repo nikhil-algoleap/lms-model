@@ -7,6 +7,7 @@ exports.getAllLeads = async (req, res) => {
   try {
     const leads = await prisma.lead.findMany({
       orderBy: { createdAt: 'desc' },
+      where: { NOT: { leadStatus: 'CONVERTED' } },
       include: {
         _count: {
           select: { activities: true }
@@ -36,10 +37,13 @@ exports.getLeadById = async (req, res) => {
           include: { user: { select: { fullName: true } } }
         },
         account: {
-          select: { name: true }
+          select: { id: true, name: true }
         },
         contact: {
           select: { fullName: true, title: true, email: true, phone: true }
+        },
+        convertedDeal: {
+          select: { id: true, title: true, stage: true, value: true }
         }
       }
     });
@@ -51,62 +55,72 @@ exports.getLeadById = async (req, res) => {
   }
 };
 
-// Create lead with tracking
+// Create lead (Salesforce-style: simple prospect fields)
 exports.createLead = async (req, res) => {
   try {
     const { 
-      title, 
-      accountId, 
+      title,
+      firstName,
+      lastName,
+      email,
+      phone,
+      company,
+      jobTitle,
+      industry,
+      source,
+      leadStatus,
+      description,
+      // Legacy fields (still accepted for backward compat)
+      accountId,
+      accountName,
       contactId,
-      value, 
-      probability, 
-      dueDate, 
-      deliveryFormat, 
+      primaryContact,
+      value,
+      probability,
+      dueDate,
+      deliveryFormat,
       serviceLine,
       practiceArea,
       estimatedDuration,
-      source,
       stage,
       practiceLeader,
-      clientManager,
-      description,
-      accountName, // Catch legacy string
-      primaryContact, // Catch legacy string
-      firstName,
-      lastName,
-      industry,
-      leadStatus
+      clientManager
     } = req.body;
 
-    let finalAccountId = accountId || accountName;
-    if (finalAccountId && !finalAccountId.includes('-')) {
-      const acc = await prisma.account.findFirst({ where: { name: finalAccountId } });
+    // Generate title from name if not provided
+    const leadTitle = title || `${firstName || ''} ${lastName || ''} - ${company || 'Lead'}`.trim();
+
+    // Resolve account if provided
+    let finalAccountId = accountId || null;
+    const companyName = accountName || company;
+    if (companyName && !finalAccountId) {
+      const acc = await prisma.account.findFirst({ where: { name: companyName } });
       if (acc) finalAccountId = acc.id;
-      else {
-        const newAcc = await prisma.account.create({ data: { name: finalAccountId } });
-        finalAccountId = newAcc.id;
-      }
     }
 
-    let finalContactId = contactId || primaryContact;
-    if (finalContactId && !finalContactId.includes('-')) {
-      const con = await prisma.contact.findFirst({ where: { fullName: finalContactId } });
+    // Resolve contact if provided
+    let finalContactId = contactId || null;
+    if (primaryContact && !finalContactId) {
+      const con = await prisma.contact.findFirst({ where: { fullName: primaryContact } });
       if (con) finalContactId = con.id;
-      else {
-        const newCon = await prisma.contact.create({ data: { fullName: finalContactId, accountId: finalAccountId } });
-        finalContactId = newCon.id;
-      }
     }
 
     const lead = await prisma.lead.create({
       data: {
-        title,
-        accountId: finalAccountId || null,
-        contactId: finalContactId || null,
+        title: leadTitle,
         firstName,
         lastName,
+        email,
+        phone,
+        company: companyName || null,
+        jobTitle,
         industry,
+        source: source || 'Existing Client',
         leadStatus: leadStatus || 'NEW',
+        description,
+        accountId: finalAccountId,
+        contactId: finalContactId,
+        // Legacy fields
         value: value ? String(value) : null,
         probability: probability ? parseInt(probability) : 0,
         dueDate: dueDate ? new Date(dueDate) : null,
@@ -114,16 +128,14 @@ exports.createLead = async (req, res) => {
         serviceLine,
         practiceArea,
         estimatedDuration: estimatedDuration ? parseInt(estimatedDuration) : null,
-        source: source || 'Existing Client',
         stage: stage || 'NEW',
         practiceLeader,
         clientManager,
-        description,
         activities: {
           create: {
             type: 'CREATED',
             note: 'Lead created in the system',
-            userId: req.user?.userId // From auth middleware
+            userId: req.user?.userId
           }
         }
       }
@@ -146,7 +158,21 @@ exports.updateLead = async (req, res) => {
       data: req.body
     });
 
-    // Track stage changes
+    // Track leadStatus changes
+    if (req.body.leadStatus && req.body.leadStatus !== oldLead.leadStatus) {
+      await prisma.leadActivity.create({
+        data: {
+          leadId: lead.id,
+          type: 'STATUS_CHANGED',
+          fromValue: oldLead.leadStatus,
+          toValue: req.body.leadStatus,
+          note: `Lead status changed from ${oldLead.leadStatus} to ${req.body.leadStatus}`,
+          userId: req.user?.userId
+        }
+      });
+    }
+
+    // Track legacy stage changes
     if (req.body.stage && req.body.stage !== oldLead.stage) {
       await prisma.leadActivity.create({
         data: {
