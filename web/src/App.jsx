@@ -20,7 +20,7 @@ import { ShieldOff } from 'lucide-react';
 const Layout = ({ children }) => (
   <div className="flex bg-slate-50 min-h-screen">
     <Sidebar />
-    <main className="flex-1 overflow-y-auto">
+    <main className="flex-1 ml-64 overflow-y-auto">
       {children}
     </main>
   </div>

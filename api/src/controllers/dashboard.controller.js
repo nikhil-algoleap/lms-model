@@ -3,28 +3,109 @@ const prisma = new PrismaClient();
 
 exports.getStats = async (req, res) => {
   try {
-    const totalLeads = await prisma.lead.count();
-    const wonLeadsCount = await prisma.lead.count({ where: { stage: 'WON' } });
-    
-    // Total Pipeline (Value needs to be parsed as it's a string in the DB)
-    const allLeads = await prisma.lead.findMany({ select: { value: true, stage: true } });
-    
+    // Total active leads (not converted)
+    const totalLeads = await prisma.lead.count({
+      where: { leadStatus: { not: 'CONVERTED' } }
+    });
+
+    // Converted leads count
+    const convertedLeadsCount = await prisma.lead.count({
+      where: { leadStatus: 'CONVERTED' }
+    });
+
+    // Unassigned leads (no owner)
+    let unassignedLeads = 0;
+    try {
+      unassignedLeads = await prisma.lead.count({
+        where: {
+          ownerId: null,
+          leadStatus: { not: 'CONVERTED' }
+        }
+      });
+    } catch (e) {
+      // owner_id column may not exist yet
+      unassignedLeads = 0;
+    }
+
+    // Pipeline value from all active leads
+    const allLeads = await prisma.lead.findMany({
+      where: { leadStatus: { not: 'CONVERTED' } },
+      select: { value: true, createdAt: true }
+    });
+
     const totalPipeline = allLeads.reduce((sum, lead) => {
-      // Remove symbols and parse
       const val = parseFloat(lead.value?.replace(/[^0-9.]/g, '') || 0);
       return sum + val;
     }, 0);
 
-    const winRate = totalLeads > 0 ? Math.round((wonLeadsCount / totalLeads) * 100) : 0;
+    // Conversion rate
+    const allLeadsCount = await prisma.lead.count();
+    const conversionRate = allLeadsCount > 0
+      ? Math.round((convertedLeadsCount / allLeadsCount) * 100)
+      : 0;
+
+    // Average time to convert (for converted leads)
+    let convertedLeads = [];
+    try {
+      convertedLeads = await prisma.lead.findMany({
+        where: {
+          leadStatus: 'CONVERTED',
+          createdAt: { not: null }
+        },
+        select: { createdAt: true, convertedDate: true }
+      });
+    } catch (e) {
+      // convertedDate column may not exist yet
+      convertedLeads = [];
+    }
+
+    let avgTimeToConvert = '0d';
+    if (convertedLeads.length > 0) {
+      const leadsWithDates = convertedLeads.filter(l => l.convertedDate);
+      const totalDays = leadsWithDates.reduce((sum, lead) => {
+        const created = new Date(lead.createdAt);
+        const converted = new Date(lead.convertedDate);
+        const diffDays = Math.floor((converted - created) / (1000 * 60 * 60 * 24));
+        return sum + Math.max(diffDays, 0);
+      }, 0);
+      avgTimeToConvert = leadsWithDates.length > 0 ? `${Math.round(totalDays / leadsWithDates.length)}d` : 'N/A';
+    } else {
+      avgTimeToConvert = 'N/A';
+    }
+
+    // Format pipeline value
+    let pipelineValue;
+    if (totalPipeline >= 1000000) {
+      pipelineValue = `$${(totalPipeline / 1000000).toFixed(1)}M`;
+    } else if (totalPipeline >= 1000) {
+      pipelineValue = `$${(totalPipeline / 1000).toFixed(0)}K`;
+    } else {
+      pipelineValue = `$${totalPipeline.toFixed(0)}`;
+    }
+
+    // Lead status breakdown for the chart
+    const statusBreakdown = await prisma.lead.groupBy({
+      by: ['leadStatus'],
+      _count: { id: true },
+      where: { leadStatus: { not: 'CONVERTED' } }
+    });
+
+    const statusCounts = {};
+    statusBreakdown.forEach(item => {
+      statusCounts[item.leadStatus] = item._count.id;
+    });
 
     res.json({
       totalLeads,
-      wonLeadsCount,
-      totalPipeline: `$${(totalPipeline / 1000000).toFixed(1)}M`,
-      winRate: `${winRate}%`,
-      avgDealSize: totalLeads > 0 ? `$${Math.round(totalPipeline / totalLeads).toLocaleString()}K` : '$0'
+      pipelineValue,
+      leadConversionRate: `${conversionRate}%`,
+      avgTimeToConvert,
+      unassignedLeads,
+      convertedLeadsCount,
+      statusCounts
     });
   } catch (error) {
+    console.error('Dashboard stats error:', error);
     res.status(500).json({ error: error.message });
   }
 };

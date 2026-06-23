@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -11,7 +12,7 @@ async function main() {
     { key: 'lead:update', description: 'Update Lead Status', group: 'Sales Lead Actions' },
     { key: 'lead:delete', description: 'Delete Opportunity', group: 'Sales Lead Actions' },
     { key: 'lead:assign', description: 'Assign Owner', group: 'Sales Lead Actions' },
-    
+
     // DMS (Deals)
     { key: 'deals.view_all', description: 'View All Deals', group: 'Deal Management' },
     { key: 'deals.create', description: 'Create New Deal', group: 'Deal Management' },
@@ -20,12 +21,12 @@ async function main() {
     { key: 'deals.close_won', description: 'Mark Deal as Won', group: 'Deal Management' },
     { key: 'deals.delete', description: 'Delete Deal', group: 'Deal Management' },
     { key: 'deals.export_csv', description: 'Export Pipeline to CSV', group: 'Deal Management' },
-    
+
     // Financials
     { key: 'financial:view_value', description: 'View Deal Value', group: 'Financial Transparency' },
     { key: 'financial:export', description: 'Export LTV Reports', group: 'Financial Transparency' },
     { key: 'financial:edit_prob', description: 'Edit Probability', group: 'Financial Transparency' },
-    
+
     // Relationships
     { key: 'crm:account_create', description: 'Add Account', group: 'Client Relationships' },
     { key: 'crm:contact_edit', description: 'Edit Stakeholder', group: 'Client Relationships' },
@@ -98,6 +99,29 @@ async function main() {
 
   console.log('Seed completed successfully.');
 
+  // 4. Create Demo Users
+  console.log('Creating demo users...');
+  const passwordHash = await bcrypt.hash('password123', 10);
+
+  const adminRole = await prisma.role.findUnique({ where: { name: 'Administrator' } });
+  const execRole = await prisma.role.findUnique({ where: { name: 'Executive' } });
+
+  const demoUsers = [
+    { email: 'nikhil@algoleap.com', fullName: 'Nikhil', roleId: adminRole.id, avatarColor: '#4f46e5' },
+    { email: 'prasad@algoleap.com', fullName: 'Prasad', roleId: execRole.id, avatarColor: '#7c3aed' },
+  ];
+
+  for (const u of demoUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: { passwordHash, roleId: u.roleId },
+      create: { ...u, passwordHash }
+    });
+    console.log(`  ✅ User: ${u.email} (${u.email === 'nikhil@algoleap.com' ? 'Administrator' : 'Executive'})`);
+  }
+
+  console.log('Demo users created (password: password123)');
+
   // 4. Create Sample Data for DMS Demo
   console.log('Creating sample leads and deals...');
   const account = await prisma.account.upsert({
@@ -115,14 +139,46 @@ async function main() {
   // Sample Leads
   const lead1 = await prisma.lead.upsert({
     where: { title: 'Cloud Migration Project' },
-    update: { stage: 'NEW' },
-    create: { title: 'Cloud Migration Project', accountId: account.id, contactId: contact.id, stage: 'NEW', value: '$50,000', probability: 10, description: 'Initial inquiry for cloud migration.' }
+    update: { leadStatus: 'NEW' },
+    create: {
+      title: 'Cloud Migration Project',
+      accountId: account.id,
+      contactId: contact.id,
+      leadStatus: 'NEW',
+      value: '$50,000',
+      probability: 10,
+      description: 'Initial inquiry for cloud migration.',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@acme.com',
+      company: 'Acme Corp',
+      leadRating: 'COLD',
+      leadScore: 10
+    }
   });
 
   const lead2 = await prisma.lead.upsert({
     where: { title: 'AI Strategy Consulting' },
-    update: { stage: 'QUALIFIED' },
-    create: { title: 'AI Strategy Consulting', accountId: account.id, contactId: contact.id, stage: 'QUALIFIED', value: '$120,000', probability: 30, description: 'Highly interested in AI roadmap.' }
+    update: { leadStatus: 'QUALIFIED' },
+    create: {
+      title: 'AI Strategy Consulting',
+      accountId: account.id,
+      contactId: contact.id,
+      leadStatus: 'QUALIFIED',
+      value: '$120,000',
+      probability: 30,
+      description: 'Highly interested in AI roadmap.',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      email: 'jane@acme.com',
+      company: 'Acme Corp',
+      leadRating: 'HOT',
+      leadScore: 85,
+      hasBudget: true,
+      hasAuthority: true,
+      hasNeed: true,
+      hasTimeline: true
+    }
   });
 
   // Sample Deal

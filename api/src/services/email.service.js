@@ -13,7 +13,7 @@ const sendLeadNotification = async (lead, assigneeEmail) => {
         <p><strong>Lead Title:</strong> ${lead.title}</p>
         <p><strong>Value:</strong> $${lead.value || 'N/A'}</p>
         <p><strong>Probability:</strong> ${lead.probability}%</p>
-        <p><strong>Stage:</strong> ${lead.stage}</p>
+        <p><strong>Stage:</strong> ${lead.leadStatus || lead.stage}</p>
         <br/>
         <a href="http://localhost:5173/leads/${lead.id}">View Lead in Dashboard</a>
       `

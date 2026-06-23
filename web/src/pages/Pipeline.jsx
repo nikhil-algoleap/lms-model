@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/client';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Clock, 
-  DollarSign, 
+import Modal from '../components/ui/Modal';
+import DealForm from '../components/forms/DealForm';
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Clock,
+  DollarSign,
   ArrowRight,
   TrendingUp,
   AlertCircle,
@@ -16,17 +18,29 @@ import {
 
 const Pipeline = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
+  const location = useLocation();
+  const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpportunitiesView, setIsOpportunitiesView] = useState(false);
 
-  const stages = [
-    { id: 'NEW', label: 'New Lead', color: 'bg-slate-100 text-slate-600' },
+  const items = isOpportunitiesView 
+    ? rawData.filter(item => item.type === 'DEAL' && item.sourceLeadId)
+    : rawData;
+
+  const stages = isOpportunitiesView ? [
+    { id: 'DISCOVERY', label: 'Discovery', color: 'bg-purple-50 text-purple-600' },
+    { id: 'PROPOSAL', label: 'Proposal', color: 'bg-amber-50 text-amber-600' },
+    { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-50 text-orange-600' },
+    { id: 'CONTRACT', label: 'Contact', color: 'bg-indigo-50 text-indigo-600' },
+    { id: 'CLOSED', label: 'Closed', color: 'bg-emerald-50 text-emerald-600' }
+  ] : [
     { id: 'QUALIFIED', label: 'Qualified', color: 'bg-blue-50 text-blue-600' },
     { id: 'DISCOVERY', label: 'Discovery', color: 'bg-purple-50 text-purple-600' },
     { id: 'PROPOSAL', label: 'Proposal', color: 'bg-amber-50 text-amber-600' },
     { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-50 text-orange-600' },
-    { id: 'CONTRACT', label: 'Contract', color: 'bg-indigo-50 text-indigo-600' },
+    { id: 'CONTRACT', label: 'Contact', color: 'bg-indigo-50 text-indigo-600' },
     { id: 'CLOSED', label: 'Closed', color: 'bg-emerald-50 text-emerald-600' }
   ];
 
@@ -35,9 +49,10 @@ const Pipeline = () => {
   }, []);
 
   const fetchPipeline = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/deals/pipeline');
-      setItems(res.data);
+      setRawData(res.data);
     } catch (err) {
       console.error('Error fetching pipeline:', err);
     } finally {
@@ -55,13 +70,13 @@ const Pipeline = () => {
       `"${item.value || '0'}"`,
       new Date(item.createdAt).toLocaleDateString()
     ]);
-    
+
     const csvContent = [headers, ...csvData].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `pipeline_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `${isOpportunitiesView ? 'opportunities' : 'pipeline'}_export_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -69,10 +84,10 @@ const Pipeline = () => {
   };
 
   const getFilteredItems = (stageId) => {
-    return items.filter(item => 
-      item.stage === stageId && 
-      (item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       item.accountName?.toLowerCase().includes(searchTerm.toLowerCase()))
+    return items.filter(item =>
+      item.stage === stageId &&
+      (item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.accountName?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   };
 
@@ -92,16 +107,34 @@ const Pipeline = () => {
   return (
     <div className="h-screen flex flex-col bg-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center">
+      <div className="bg-white border-b border-slate-200 px-8 py-6 flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Unified Pipeline</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Manage leads and deals in one place</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Pipeline
+          </h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">
+            Manage leads and deals in one place
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
+            <button
+              onClick={() => setIsOpportunitiesView(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${!isOpportunitiesView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              All Items
+            </button>
+            <button
+              onClick={() => setIsOpportunitiesView(true)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${isOpportunitiesView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Opportunities Only
+            </button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
+            <input
               type="text"
               placeholder="Search leads or deals..."
               value={searchTerm}
@@ -109,16 +142,19 @@ const Pipeline = () => {
               className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#358b49] w-64 transition-all"
             />
           </div>
-          <button 
+          <button
             onClick={exportToCSV}
             className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2"
           >
             <Download size={18} />
             <span className="text-xs font-bold">Export</span>
           </button>
-          <button className="bg-[#358b49] text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#2a7039] transition-all shadow-lg shadow-green-900/10">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[#358b49] text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#2a7039] transition-all shadow-lg shadow-green-900/10"
+          >
             <Plus size={18} />
-            <span>New Item</span>
+            <span>{isOpportunitiesView ? 'New Opportunity' : 'New Item'}</span>
           </button>
         </div>
       </div>
@@ -144,8 +180,8 @@ const Pipeline = () => {
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
                 {getFilteredItems(stage.id).map((item) => (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     onClick={() => navigate(item.type === 'LEAD' ? `/leads/${item.id}` : `/deals/${item.id}`)}
                     className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#358b49]/30 transition-all cursor-pointer group"
                   >
@@ -182,7 +218,7 @@ const Pipeline = () => {
                     )}
                   </div>
                 ))}
-                
+
                 {getFilteredItems(stage.id).length === 0 && (
                   <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-300 text-xs font-bold">
                     Empty lane
@@ -193,6 +229,17 @@ const Pipeline = () => {
           ))}
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        hideHeader={true}
+      >
+        <DealForm
+          onSuccess={() => { setIsModalOpen(false); fetchPipeline(); }}
+          onClose={() => setIsModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 };

@@ -12,7 +12,7 @@ const Login = () => {
 
   const demoAccounts = [
     { email: 'nikhil@algoleap.com', role: 'Administrator', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' },
-    { email: 'prasad@algoleap', role: 'Executive', icon: Briefcase, color: 'text-purple-500 bg-purple-50' },
+    { email: 'prasad@algoleap.com', role: 'Executive', icon: Briefcase, color: 'text-purple-500 bg-purple-50' },
   ];
 
   const quickLogin = (demoEmail) => {

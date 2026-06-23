@@ -30,7 +30,7 @@ exports.getAccountById = async (req, res) => {
           orderBy: { createdAt: 'asc' }
         },
         leads: {
-          select: { id: true, title: true, stage: true, value: true },
+          select: { id: true, title: true, leadStatus: true, value: true },
           orderBy: { createdAt: 'desc' },
           take: 10
         },
@@ -43,6 +43,15 @@ exports.getAccountById = async (req, res) => {
     });
     
     if (!account) return res.status(404).json({ message: 'Account not found' });
+
+    // Map leadStatus to stage for frontend compatibility
+    if (account.leads) {
+      account.leads = account.leads.map(lead => ({
+        ...lead,
+        stage: lead.leadStatus
+      }));
+    }
+
     res.json(account);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -8,6 +8,90 @@ import {
   Upload
 } from 'lucide-react';
 
+const SearchableSelect = ({ label, placeholder, value, onChange, options, required, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(value || '');
+
+  useEffect(() => {
+    setSearch(value || '');
+  }, [value]);
+
+  const filteredOptions = options.filter(opt =>
+    opt && opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const isExactMatch = options.some(opt =>
+    opt && opt.toLowerCase() === search.trim().toLowerCase()
+  );
+
+  return (
+    <div className="space-y-2 relative">
+      <label className="text-sm font-bold text-slate-700">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <div className="relative">
+        <input
+          required={required}
+          type="text"
+          placeholder={placeholder}
+          disabled={disabled}
+          className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900 bg-white"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            onChange(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => {
+            setTimeout(() => setIsOpen(false), 200);
+          }}
+        />
+        <ChevronDown 
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer pointer-events-none" 
+          size={18} 
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-2">
+          {search.trim() !== '' && !isExactMatch && (
+            <div
+              className="px-6 py-3 text-sm text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer font-bold border-b border-slate-100"
+              onMouseDown={() => {
+                const newValue = search.trim();
+                setSearch(newValue);
+                onChange(newValue);
+              }}
+            >
+              + Add "{search.trim()}" as new {label.toLowerCase()}
+            </div>
+          )}
+
+          {filteredOptions.map((opt, i) => (
+            <div
+              key={i}
+              className="px-6 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
+              onMouseDown={() => {
+                setSearch(opt);
+                onChange(opt);
+              }}
+            >
+              {opt}
+            </div>
+          ))}
+
+          {filteredOptions.length === 0 && search.trim() === '' && (
+            <div className="px-6 py-3 text-sm text-slate-400 italic">
+              No options available
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const LeadForm = ({ onSuccess, prefilledAccountName }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -15,44 +99,160 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
   const [contacts, setContacts] = useState([]);
   const [file, setFile] = useState(null);
 
+  // Dropdown lists
+  const [practiceLeaders, setPracticeLeaders] = useState(['Prashanth', 'Sanjay']);
+  const [clientManagers, setClientManagers] = useState(['Gopi (me)', 'Nikhil Y']);
+  const [practiceAreas, setPracticeAreas] = useState([
+    'SRE-observability',
+    'Salesforce',
+    'Microsoft Cloud',
+    'Google Cloud',
+    'AWS',
+    'ERP',
+    'Oracle',
+    'Adobe',
+    'Data practice',
+    'Databricks',
+    'Workday',
+    'Pega',
+    'Supply Chain'
+  ]);
+  const [deliveryFormats, setDeliveryFormats] = useState([
+    'Studio MVP Enhancement',
+    'TM- Staff Augmentation',
+    'Project engagement',
+    'Support services',
+    'Manager service',
+    'Managed Services'
+  ]);
+
   const [formData, setFormData] = useState({
-    title: '',
     accountName: prefilledAccountName || '',
     primaryContact: '',
     firstName: '',
     lastName: '',
+    email: '',
+    phone: '',
+    company: '',
+    jobTitle: '',
     industry: '',
     leadStatus: 'NEW',
+    leadRating: 'COLD',
     serviceLine: '',
     practiceArea: '',
     deliveryFormat: '',
-    value: '250000',
-    estimatedDuration: '6',
-    dueDate: '2026-05-01',
+    value: '',
+    estimatedDuration: '',
+    dueDate: '',
     probability: '20',
     source: 'Existing Client',
-    stage: 'New',
     geography: 'Central Europe',
-    practiceLeader: 'Prashanth',
-    clientManager: 'Gopi (me)',
+    practiceLeader: '',
+    clientManager: '',
     description: ''
   });
 
   useEffect(() => {
     const fetchSelectData = async () => {
       try {
-        const [accRes, conRes] = await Promise.all([
-          api.get('/accounts'),
-          api.get('/contacts')
-        ]);
-        setAccounts(accRes.data);
-        setContacts(conRes.data);
+        // Fetch accounts
+        try {
+          const accRes = await api.get('/accounts');
+          setAccounts(accRes.data);
+        } catch (e) {
+          console.error('Error fetching accounts:', e);
+        }
+
+        // Fetch contacts
+        try {
+          const conRes = await api.get('/contacts');
+          setContacts(conRes.data);
+        } catch (e) {
+          console.error('Error fetching contacts:', e);
+        }
+
+        // Fetch leads to extract existing practice leaders, client managers, practice areas, and delivery formats dynamically
+        try {
+          const leadRes = await api.get('/leads');
+          const uniqueLeaders = new Set(['Prashanth', 'Sanjay']);
+          const uniqueManagers = new Set(['Gopi (me)', 'Nikhil Y']);
+          const uniquePracticeAreas = new Set([
+            'SRE-observability',
+            'Salesforce',
+            'Microsoft Cloud',
+            'Google Cloud',
+            'AWS',
+            'ERP',
+            'Oracle',
+            'Adobe',
+            'Data practice',
+            'Databricks',
+            'Workday',
+            'Pega',
+            'Supply Chain'
+          ]);
+          const uniqueDeliveryFormats = new Set([
+            'Studio MVP Enhancement',
+            'TM- Staff Augmentation',
+            'Project engagement',
+            'Support services',
+            'Manager service',
+            'Managed Services'
+          ]);
+
+          if (leadRes.data && Array.isArray(leadRes.data)) {
+            leadRes.data.forEach(lead => {
+              if (lead.practiceLeader) uniqueLeaders.add(lead.practiceLeader);
+              if (lead.clientManager) uniqueManagers.add(lead.clientManager);
+              if (lead.practiceArea) uniquePracticeAreas.add(lead.practiceArea);
+              if (lead.deliveryFormat) uniqueDeliveryFormats.add(lead.deliveryFormat);
+            });
+          }
+          setPracticeLeaders(Array.from(uniqueLeaders));
+          setClientManagers(Array.from(uniqueManagers));
+          setPracticeAreas(Array.from(uniquePracticeAreas));
+          setDeliveryFormats(Array.from(uniqueDeliveryFormats));
+        } catch (e) {
+          console.error('Error fetching leads for selection:', e);
+        }
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('General fetch error:', err);
       }
     };
     fetchSelectData();
   }, []);
+
+  const handlePrimaryContactChange = (val) => {
+    const matchedContact = contacts.find(c => c.fullName === val);
+    if (matchedContact) {
+      const nameParts = val.trim().split(/\s+/);
+      const fName = nameParts[0] || '';
+      const lName = nameParts.slice(1).join(' ') || '';
+
+      setFormData(prev => ({
+        ...prev,
+        primaryContact: val,
+        firstName: fName,
+        lastName: lName,
+        email: matchedContact.email || '',
+        phone: matchedContact.phone || '',
+        jobTitle: matchedContact.title || '',
+        company: matchedContact.account?.name || matchedContact.company || prev.company || '',
+        accountName: matchedContact.account?.name || prev.accountName || ''
+      }));
+    } else {
+      const nameParts = val.trim().split(/\s+/);
+      const fName = nameParts[0] || '';
+      const lName = nameParts.slice(1).join(' ') || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        primaryContact: val,
+        firstName: fName,
+        lastName: lName
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,8 +261,9 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
       // 1. Create Lead
       const leadRes = await api.post('/leads', {
         ...formData,
-        probability: parseInt(formData.probability),
-        estimatedDuration: parseInt(formData.estimatedDuration)
+        company: formData.company || formData.accountName,
+        probability: formData.probability ? parseInt(formData.probability) : undefined,
+        estimatedDuration: formData.estimatedDuration ? parseInt(formData.estimatedDuration) : undefined
       });
 
       const leadId = leadRes.data.id;
@@ -107,19 +308,6 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
 
         <form onSubmit={handleSubmit} className="bg-white p-12 rounded-[2rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] space-y-10">
 
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Lead title <span className="text-rose-500">*</span></label>
-            <input
-              required
-              type="text"
-              placeholder="e.g., DHL · ServiceNow AI Transformation"
-              className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-            <p className="text-[11px] text-slate-400 font-medium pt-1">Suggested format: Account · Project or outcome</p>
-          </div>
-
           <div className="grid grid-cols-2 gap-10">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">First name</label>
@@ -145,40 +333,71 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
 
           <div className="grid grid-cols-2 gap-10">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Account</label>
-              <div className="relative">
-                <select disabled={!!prefilledAccountName} className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium disabled:bg-slate-50 disabled:text-slate-400" value={formData.accountName} onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}>
-                  <option value="">Select account...</option>
-                  <option value="ADP">ADP</option>
-                  <option value="CBRE">CBRE</option>
-                  <option value="Cargill">Cargill</option>
-                  <option value="Cornerstone">Cornerstone</option>
-                  <option value="DHL">DHL</option>
-                  <option value="IDP Education">IDP Education</option>
-                  <option value="KPMG">KPMG</option>
-                  <option value="Maersk">Maersk</option>
-                  <option value="Thomson Reuters">Thomson Reuters</option>
-                  {prefilledAccountName && !["ADP", "CBRE", "Cargill", "Cornerstone", "DHL", "IDP Education", "KPMG", "Maersk", "Thomson Reuters"].includes(prefilledAccountName) && (
-                    <option value={prefilledAccountName}>{prefilledAccountName}</option>
-                  )}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
+              <label className="text-sm font-bold text-slate-700">Email address <span className="text-rose-500">*</span></label>
+              <input
+                required
+                type="email"
+                placeholder="name@company.com"
+                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Primary contact</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.primaryContact} onChange={(e) => setFormData({ ...formData, primaryContact: e.target.value })}>
-                  <option value="">Select contact...</option>
-                  <option value="Marcus Weber">Marcus Weber (DHL)</option>
-                  <option value="Sarah Hoffmann">Sarah Hoffmann (DHL)</option>
-                  <option value="Jessica Tan">Jessica Tan (Thomson Reuters)</option>
-                  <option value="John Doe">John Doe (CBRE)</option>
-                  <option value="Alice Smith">Alice Smith (Cargill)</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
+              <label className="text-sm font-bold text-slate-700">Phone number <span className="text-rose-500">*</span></label>
+              <input
+                required
+                type="tel"
+                placeholder="+1 (555) 000-0000"
+                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Job Title</label>
+              <input
+                type="text"
+                placeholder="e.g. VP of Engineering"
+                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                value={formData.jobTitle}
+                onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Company <span className="text-rose-500">*</span></label>
+              <input
+                required
+                type="text"
+                placeholder="Company Name"
+                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10">
+            <SearchableSelect
+              label="Account"
+              placeholder="Search existing or type new account..."
+              value={formData.accountName}
+              onChange={(val) => setFormData({ ...formData, accountName: val })}
+              options={accounts.map(acc => acc.name)}
+              required={true}
+              disabled={!!prefilledAccountName}
+            />
+            <SearchableSelect
+              label="Primary Contact"
+              placeholder="Search existing or type new contact..."
+              value={formData.primaryContact}
+              onChange={handlePrimaryContactChange}
+              options={contacts.map(c => c.fullName).filter(Boolean)}
+              required={false}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-10">
@@ -230,46 +449,25 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Practice area</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.practiceArea} onChange={(e) => setFormData({ ...formData, practiceArea: e.target.value })}>
-                  <option value="">Select practice area...</option>
-                  <option>SRE-observability</option>
-                  <option>Salesforce</option>
-                  <option>Microsoft Cloud</option>
-                  <option>Google Cloud</option>
-                  <option>AWS</option>
-                  <option>ERP</option>
-                  <option>Oracle</option>
-                  <option>Adobe</option>
-                  <option>Data practice</option>
-                  <option>Databricks</option>
-                  <option>Workday</option>
-                  <option>Pega</option>
-                  <option>Supply Chain</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
+            <SearchableSelect
+              label="Practice Area"
+              placeholder="Search or type new practice area..."
+              value={formData.practiceArea}
+              onChange={(val) => setFormData({ ...formData, practiceArea: val })}
+              options={practiceAreas}
+              required={false}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Delivery format</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.deliveryFormat} onChange={(e) => setFormData({ ...formData, deliveryFormat: e.target.value })}>
-                  <option value="">Select delivery format...</option>
-                  <option>Studio MVP Enhancement</option>
-                  <option>TM- Staff Augmentation</option>
-                  <option>Project engagement</option>
-                  <option>Support services</option>
-                  <option>Manager service</option>
-                  <option>Managed Services</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
+            <SearchableSelect
+              label="Delivery Format"
+              placeholder="Search or type new delivery format..."
+              value={formData.deliveryFormat}
+              onChange={(val) => setFormData({ ...formData, deliveryFormat: val })}
+              options={deliveryFormats}
+              required={false}
+            />
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">Estimated revenue (USD) <span className="text-rose-500">*</span></label>
               <input required type="number" className="w-full border border-slate-200 px-6 py-4 rounded-xl font-medium" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
@@ -289,14 +487,12 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
 
           <div className="grid grid-cols-2 gap-10">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Stage</label>
+              <label className="text-sm font-bold text-slate-700">Lead rating</label>
               <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.stage} onChange={(e) => setFormData({ ...formData, stage: e.target.value })}>
-                  <option value="New">New</option>
-                  <option value="Qualification">Qualification</option>
-                  <option value="Proposal">Proposal</option>
-                  <option value="Negotiation">Negotiation</option>
-                  <option value="Closed Won">Closed Won</option>
+                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.leadRating} onChange={(e) => setFormData({ ...formData, leadRating: e.target.value })}>
+                  <option value="HOT">🔥 Hot</option>
+                  <option value="WARM">☀️ Warm</option>
+                  <option value="COLD">❄️ Cold</option>
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               </div>
@@ -317,24 +513,22 @@ const LeadForm = ({ onSuccess, prefilledAccountName }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Practice Leader</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.practiceLeader} onChange={(e) => setFormData({ ...formData, practiceLeader: e.target.value })}>
-                  <option>Prashanth</option><option>Sanjay</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Owner (Client Manager)</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.clientManager} onChange={(e) => setFormData({ ...formData, clientManager: e.target.value })}>
-                  <option>Gopi (me)</option><option>Nikhil Y</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
+            <SearchableSelect
+              label="Practice Leader"
+              placeholder="Search existing or type new leader..."
+              value={formData.practiceLeader}
+              onChange={(val) => setFormData({ ...formData, practiceLeader: val })}
+              options={practiceLeaders}
+              required={false}
+            />
+            <SearchableSelect
+              label="Owner (Client Manager)"
+              placeholder="Search existing or type new owner..."
+              value={formData.clientManager}
+              onChange={(val) => setFormData({ ...formData, clientManager: val })}
+              options={clientManagers}
+              required={false}
+            />
           </div>
 
           {/* NEW SECTION: DESCRIPTION */}

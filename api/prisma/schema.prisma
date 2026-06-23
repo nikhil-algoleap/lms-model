@@ -26,6 +26,7 @@ model User {
   activities       LeadActivity[]
   systemActivities SystemActivity[]
   ownedDeals       Deal[]
+  ownedLeads       Lead[]
   dealActivities   DealActivity[]
   
   @@map("users")
@@ -140,15 +141,18 @@ model Lead {
   contact         Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
   firstName       String?   @map("first_name")
   lastName        String?   @map("last_name")
+  email           String?
+  phone           String?
+  company         String?
+  jobTitle        String?   @map("job_title")
   industry        String?
-  leadStatus      String?   @default("NEW") @map("lead_status")
+  leadStatus      String    @default("NEW") @map("lead_status")
   serviceLine     String?   @map("service_line")
   deliveryFormat  String?   @map("delivery_format")
   value           String?
   probability     Int?      @default(0)
   dueDate         DateTime? @db.Date @map("due_date")
   ownerInitials   String?    @map("owner_initials")
-  stage           String?   @default("NEW")
   isFeatured      Boolean?  @default(false) @map("is_featured")
   description     String?
   practiceArea    String?   @map("practice_area")
@@ -156,6 +160,27 @@ model Lead {
   source          String?   @default("Existing Client")
   practiceLeader  String?   @map("practice_leader")
   clientManager   String?   @map("client_manager")
+  ownerId         String?   @map("owner_id")
+  owner           User?     @relation(fields: [ownerId], references: [id])
+  
+  // Lead scoring & qualification
+  leadScore       Int       @default(0) @map("lead_score")
+  leadRating      String?   @map("lead_rating")    // HOT, WARM, COLD
+  
+  // BANT qualification fields
+  hasBudget       Boolean   @default(false) @map("has_budget")
+  hasAuthority    Boolean   @default(false) @map("has_authority")
+  hasNeed         Boolean   @default(false) @map("has_need")
+  hasTimeline     Boolean   @default(false) @map("has_timeline")
+  
+  // Conversion tracking
+  isConverted     Boolean   @default(false) @map("is_converted")
+  convertedDate   DateTime? @map("converted_date")
+  convertedById   String?   @map("converted_by_id")
+  convertedAccountId  String?  @map("converted_account_id") @db.Uuid
+  convertedContactId  String?  @map("converted_contact_id") @db.Uuid
+  convertedDealId     String?  @map("converted_deal_id") @db.Uuid
+  
   createdAt       DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
 
   // For relations
@@ -223,6 +248,8 @@ model Deal {
   owner               User?            @relation(fields: [ownerId], references: [id])
   expectedCloseDate   DateTime?        @map("expected_close_date")
   description         String?
+  nextStep            String?          @map("next_step")
+  leadSource          String?          @map("lead_source")
   mrr                 Decimal?         @db.Decimal(15, 2)
   arr                 Decimal?         @db.Decimal(15, 2)
   createdAt           DateTime         @default(now()) @map("created_at")

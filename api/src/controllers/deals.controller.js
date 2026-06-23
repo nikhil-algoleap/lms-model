@@ -6,7 +6,7 @@ const { uploadToSupabase } = require('../utils/upload');
 exports.getUnifiedPipeline = async (req, res) => {
   try {
     const leads = await prisma.lead.findMany({
-      where: { NOT: { stage: 'CONVERTED' } },
+      where: { NOT: { leadStatus: 'CONVERTED' } },
       include: { account: { select: { name: true } } }
     });
 
@@ -20,7 +20,7 @@ exports.getUnifiedPipeline = async (req, res) => {
         title: l.title,
         accountId: l.accountId,
         accountName: l.account?.name,
-        stage: l.stage,
+        stage: l.leadStatus,
         value: l.value,
         type: 'LEAD',
         createdAt: l.createdAt
@@ -35,6 +35,7 @@ exports.getUnifiedPipeline = async (req, res) => {
         value: d.value,
         probability: d.probability,
         type: 'DEAL',
+        sourceLeadId: d.sourceLeadId,
         createdAt: d.createdAt
       }))
     ];
@@ -50,45 +51,174 @@ exports.getUnifiedPipeline = async (req, res) => {
 // Lead Conversion: Promote Lead to Deal
 exports.convertLead = async (req, res) => {
   const { id } = req.params;
-  const { title, value, probability, expectedCloseDate, ownerId } = req.body || {};
+  const { 
+    accountMode, accountId, accountName,
+    contactFirstName, contactLastName, contactEmail, contactPhone,
+    title, value, probability, expectedCloseDate, ownerId,
+    createDeal = true
+  } = req.body || {};
 
   try {
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return res.status(404).json({ message: 'Lead not found' });
+    
+    if (lead.leadStatus !== 'QUALIFIED') {
+      return res.status(400).json({ message: 'Only QUALIFIED leads can be converted' });
+    }
+    
+    if (lead.isConverted) {
+      return res.status(400).json({ message: 'Lead is already converted' });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the Deal
-      const deal = await tx.deal.create({
-        data: {
-          title: title || lead.title,
-          accountId: lead.accountId,
-          sourceLeadId: lead.id,
-          stage: 'DISCOVERY',
-          value: value || (lead.value ? parseFloat(lead.value.replace(/[^0-9.]/g, '')) : 0),
-          probability: probability || 10,
-          ownerId: ownerId || req.user?.userId,
-          expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
-          description: lead.description
+      // 1. Create or Link Account
+      let finalAccountId = lead.accountId || accountId;
+      if (!finalAccountId && accountMode === 'new' && (accountName || lead.company)) {
+        const targetName = accountName || lead.company || `${lead.lastName || 'Unknown'} Account`;
+        const existingAccount = await tx.account.findFirst({
+          where: { name: targetName }
+        });
+        if (existingAccount) {
+          finalAccountId = existingAccount.id;
+        } else {
+          const newAccount = await tx.account.create({
+            data: {
+              name: targetName,
+              ownerInitials: lead.ownerInitials,
+            }
+          });
+          finalAccountId = newAccount.id;
         }
-      });
+      }
 
-      // 2. Mark Lead as Converted
+      // 2. Create or Link Contact
+      let finalContactId = lead.contactId;
+      if (!finalContactId) {
+        const emailToUse = contactEmail || lead.email;
+        let existingContact = null;
+        if (emailToUse) {
+          existingContact = await tx.contact.findUnique({
+            where: { email: emailToUse }
+          });
+        }
+        if (existingContact) {
+          finalContactId = existingContact.id;
+        } else {
+          const newContact = await tx.contact.create({
+            data: {
+              fullName: `${contactFirstName || lead.firstName || ''} ${contactLastName || lead.lastName || ''}`.trim() || 'Unknown Contact',
+              email: emailToUse || null,
+              phone: contactPhone || lead.phone,
+              title: lead.jobTitle,
+              accountId: finalAccountId,
+              ownerInitials: lead.ownerInitials,
+            }
+          });
+          finalContactId = newContact.id;
+        }
+      }
+
+      // 3. Create Deal (Optional but default true)
+      let deal = null;
+      if (createDeal) {
+        // Safe value parsing to avoid NaN errors
+        let parsedValue = 0;
+        if (value !== undefined && value !== null) {
+          parsedValue = parseFloat(value);
+        } else if (lead.value) {
+          const cleanVal = lead.value.replace(/[^0-9.]/g, '');
+          parsedValue = cleanVal ? parseFloat(cleanVal) : 0;
+        }
+        if (isNaN(parsedValue)) parsedValue = 0;
+
+        // Check if a deal already exists with this sourceLeadId
+        const existingDeal = await tx.deal.findFirst({
+          where: { sourceLeadId: lead.id }
+        });
+
+        if (existingDeal) {
+          deal = existingDeal;
+        } else {
+          // Generate a unique title to avoid unique constraint violation on deal title
+          const baseTitle = title || `${lead.company || lead.lastName || 'New'} Deal`;
+          let dealTitle = baseTitle;
+          let titleUnique = false;
+          let suffixCount = 0;
+          while (!titleUnique) {
+            const duplicateTitleDeal = await tx.deal.findFirst({
+              where: { title: dealTitle }
+            });
+            if (!duplicateTitleDeal) {
+              titleUnique = true;
+            } else {
+              suffixCount++;
+              dealTitle = `${baseTitle} (${suffixCount})`;
+            }
+          }
+
+          deal = await tx.deal.create({
+            data: {
+              title: dealTitle,
+              accountId: finalAccountId,
+              sourceLeadId: lead.id,
+              stage: 'DISCOVERY',
+              value: parsedValue,
+              probability: probability || 10,
+              ownerId: ownerId || req.user?.userId,
+              expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
+              description: lead.description
+            }
+          });
+
+          // Link contact as stakeholder
+          if (finalContactId) {
+            await tx.dealStakeholder.create({
+              data: {
+                dealId: deal.id,
+                contactId: finalContactId,
+                role: 'DECISION_MAKER'
+              }
+            });
+          }
+
+          await tx.dealActivity.create({
+            data: {
+              dealId: deal.id,
+              userId: req.user?.userId,
+              type: 'CONVERSION',
+              note: `Created from converted lead: ${lead.title}`
+            }
+          });
+        }
+      }
+
+      // 4. Update Lead to CONVERTED
       await tx.lead.update({
         where: { id: lead.id },
-        data: { stage: 'CONVERTED' }
-      });
-
-      // 3. Log Activity
-      await tx.dealActivity.create({
-        data: {
-          dealId: deal.id,
-          userId: req.user?.userId,
-          type: 'CONVERSION',
-          note: `Converted from lead: ${lead.title}`
+        data: { 
+          leadStatus: 'CONVERTED',
+          isConverted: true,
+          convertedDate: new Date(),
+          convertedById: req.user?.userId || null,
+          convertedAccountId: finalAccountId,
+          convertedContactId: finalContactId,
+          convertedDealId: deal ? deal.id : null,
+          accountId: finalAccountId,
+          contactId: finalContactId
         }
       });
 
-      return deal;
+      // 5. Log Activity on Lead
+      await tx.leadActivity.create({
+        data: {
+          leadId: lead.id,
+          userId: req.user?.userId,
+          type: 'CONVERTED',
+          note: `Lead converted to Account, Contact${deal ? ', and Deal' : ''}`
+        }
+      });
+
+      return { deal, accountId: finalAccountId, contactId: finalContactId };
     });
 
     res.status(201).json(result);
@@ -350,13 +480,21 @@ exports.addCompetitor = async (req, res) => {
 };
 
 exports.createDeal = async (req, res) => {
-  const { title, accountId, stage, value, probability, expectedCloseDate, description } = req.body;
+  const { title, accountId, accountName, stage, value, probability, expectedCloseDate, description, nextStep, leadSource } = req.body;
   try {
     let finalAccountId = accountId;
-    if (req.body.accountName && !finalAccountId) {
-      const acc = await prisma.account.findFirst({ where: { name: req.body.accountName } });
+    if (accountName && !finalAccountId) {
+      const acc = await prisma.account.findFirst({ where: { name: accountName } });
       if (acc) {
         finalAccountId = acc.id;
+      } else {
+        const newAcc = await prisma.account.create({
+          data: {
+            name: accountName,
+            status: 'Prospect'
+          }
+        });
+        finalAccountId = newAcc.id;
       }
     }
 
@@ -369,6 +507,8 @@ exports.createDeal = async (req, res) => {
         probability: probability ? parseInt(probability, 10) : 10,
         expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
         description,
+        nextStep,
+        leadSource,
         ownerId: req.user?.userId
       }
     });

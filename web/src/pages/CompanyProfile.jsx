@@ -314,7 +314,7 @@ export default function CompanyProfile() {
                       <p className="truncate text-sm font-semibold text-slate-900">{lead.title}</p>
                       <p className="text-xs text-slate-400">{lead.value}</p>
                     </div>
-                    <Badge>{lead.stage}</Badge>
+                    <Badge>{lead.leadStatus || lead.stage}</Badge>
                   </div>
                 ))
               ) : (

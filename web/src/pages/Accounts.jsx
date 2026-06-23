@@ -13,20 +13,25 @@ import {
   Filter,
   Users,
   DollarSign,
-  Landmark
+  Landmark,
+  Loader2
 } from 'lucide-react';
 
 const Accounts = () => {
   const [accounts, setAccounts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const fetchAccounts = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/accounts');
       setAccounts(res.data);
     } catch (err) {
       console.error('Error fetching accounts:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,17 +98,32 @@ const Accounts = () => {
                      <th className="px-8 py-5">Corporate Scale</th>
                      <th className="px-8 py-5">Ownership</th>
                      <th className="px-8 py-5">Status</th>
-                     <th className="px-8 py-5">Action</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50">
-                  {filteredAccounts.map((account) => (
-                     <tr key={account.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="px-8 py-16 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <Loader2 className="animate-spin text-emerald-600" size={24} />
+                          <span className="text-sm font-bold text-slate-500">Loading accounts...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredAccounts.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-8 py-16 text-center text-slate-400 font-medium">
+                        No accounts found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAccounts.map((account) => (
+                      <tr key={account.id} className="group hover:bg-slate-50/80 transition-all cursor-pointer">
                         <td className="px-8 py-7">
                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-slate-900/10 group-hover:scale-110 transition-transform">
+                              <Link to={`/accounts/${account.id}`} className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-slate-900/10 group-hover:scale-110 transition-transform">
                                  {account.name?.charAt(0)}
-                              </div>
+                              </Link>
                               <div>
                                  <Link to={`/accounts/${account.id}`} className="font-bold text-slate-900 tracking-tight leading-tight mb-1 hover:text-emerald-700 hover:underline block">{account.name}</Link>
                                  <p className="text-xs font-medium text-slate-400 flex items-center gap-1">
@@ -146,13 +166,9 @@ const Accounts = () => {
                               {account.status || 'Active'}
                            </span>
                         </td>
-                        <td className="px-8 py-7">
-                           <button className="p-3 text-slate-300 hover:text-slate-900 hover:bg-white rounded-xl transition-all shadow-sm">
-                              <ChevronRight size={20} />
-                           </button>
-                        </td>
-                     </tr>
-                  ))}
+                      </tr>
+                    ))
+                  )}
                </tbody>
             </table>
          </div>

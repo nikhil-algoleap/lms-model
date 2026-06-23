@@ -412,12 +412,6 @@ const UsersRoles = () => {
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#358b49]"></div>
-    </div>
-  );
-
   return (
     <>
       {/* Modals */}
@@ -538,73 +532,18 @@ const UsersRoles = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {users.map((user) => (
-                  <tr key={user.id} className="group hover:bg-slate-50/50 transition-all">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm"
-                          style={{ backgroundColor: user.avatarColor || '#358b49' }}
-                        >
-                          {user.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm leading-tight">{user.fullName}</p>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5 font-medium">
-                            <Mail size={11} /> {user.email}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200">
-                        {user.role?.name}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      {user.isActive ? (
-                        <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-3 py-1 rounded-full w-fit">
-                          <CheckCircle2 size={12} /> Active
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5 text-rose-500 text-xs font-bold bg-rose-50 px-3 py-1 rounded-full w-fit">
-                          <XCircle size={12} /> Suspended
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-8 py-6 text-sm font-bold text-slate-500">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-slate-300" />
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                        {/* Assign Role */}
-                        <button
-                          onClick={() => setAssignTarget(user)}
-                          className="text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border text-purple-600 border-purple-100 hover:bg-purple-600 hover:text-white"
-                        >
-                          Assign Role
-                        </button>
-                        {/* Toggle Status */}
-                        <button
-                          onClick={() => toggleUserStatus(user.id, user.isActive)}
-                          className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border ${
-                            user.isActive
-                              ? 'text-rose-500 border-rose-100 hover:bg-rose-500 hover:text-white'
-                              : 'text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'
-                          }`}
-                        >
-                          {user.isActive ? 'Suspend' : 'Activate'}
-                        </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="px-8 py-16 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <Loader2 className="animate-spin text-[#358b49]" size={24} />
+                        <span className="text-sm font-bold text-slate-500">Loading users directory...</span>
                       </div>
                     </td>
                   </tr>
-                ))}
-                {users.length === 0 && (
+                ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-16 text-center">
+                    <td colSpan="5" className="px-8 py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center">
                           <UserPlus size={24} className="text-slate-400" />
@@ -613,6 +552,71 @@ const UsersRoles = () => {
                       </div>
                     </td>
                   </tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} className="group hover:bg-slate-50/50 transition-all">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm"
+                            style={{ backgroundColor: user.avatarColor || '#358b49' }}
+                          >
+                            {user.fullName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm leading-tight">{user.fullName}</p>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5 font-medium">
+                              <Mail size={11} /> {user.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200">
+                          {user.role?.name}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        {user.isActive ? (
+                          <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-3 py-1 rounded-full w-fit">
+                            <CheckCircle2 size={12} /> Active
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-rose-500 text-xs font-bold bg-rose-50 px-3 py-1 rounded-full w-fit">
+                            <XCircle size={12} /> Suspended
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-8 py-6 text-sm font-bold text-slate-500">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-slate-300" />
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-2">
+                          {/* Assign Role */}
+                          <button
+                            onClick={() => setAssignTarget(user)}
+                            className="text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border text-purple-600 border-purple-100 hover:bg-purple-600 hover:text-white"
+                          >
+                            Assign Role
+                          </button>
+                          {/* Toggle Status */}
+                          <button
+                            onClick={() => toggleUserStatus(user.id, user.isActive)}
+                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all border ${
+                              user.isActive
+                                ? 'text-rose-500 border-rose-100 hover:bg-rose-500 hover:text-white'
+                                : 'text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                          >
+                            {user.isActive ? 'Suspend' : 'Activate'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
