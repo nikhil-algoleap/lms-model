@@ -1,37 +1,36 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import Modal from '../components/ui/Modal';
 import LeadForm from '../components/forms/LeadForm';
-import ImportModal from '../components/forms/ImportModal';
 import {
-  Target,
   Search,
+  Filter,
   Plus,
+  MoreHorizontal,
+  ChevronLeft,
   ChevronRight,
-  MoreVertical,
-  ExternalLink,
-  Calendar,
+  Download,
+  Mail,
+  Phone,
   LayoutGrid,
-  List as ListIcon,
-  ChevronDown,
-  ChevronUp,
-  UploadCloud,
-  Loader2
+  List
 } from 'lucide-react';
-
-const LEAD_STATUSES = ['NEW', 'CONTACTED', 'WORKING', 'NURTURING', 'QUALIFIED', 'UNQUALIFIED'];
 
 const Leads = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'table'
-  const [activeFilter, setActiveFilter] = useState('All leads');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // 'newest' or 'oldest'
-  const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('table'); // table, grid
+
+  const statuses = ['ALL', 'NEW', 'CONTACTED', 'WORKING', 'NURTURING', 'QUALIFIED'];
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -45,132 +44,63 @@ const Leads = () => {
     }
   };
 
-  const fetchConvertedLeads = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/leads/converted');
-      setLeads(res.data);
-    } catch (err) {
-      console.error('Error fetching converted leads:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = 
+      lead.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.account?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'ALL' || lead.leadStatus === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
-  useEffect(() => {
-    if (viewMode === 'converted') {
-      fetchConvertedLeads();
-    } else {
-      fetchLeads();
-    }
-  }, [viewMode]);
-
-  const currentUser = JSON.parse(localStorage.getItem('lms_user') || '{}');
-
-  const filteredLeads = useMemo(() => {
-    const filtered = leads.filter(lead => {
-      const matchesSearch = (lead.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-        (lead.account?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase());
-
-      const matchesFilter = activeFilter === 'All leads' ||
-        (activeFilter === 'My leads' && lead.ownerId === currentUser.id) ||
-        lead.serviceLine === activeFilter;
-
-      return matchesSearch && matchesFilter;
-    });
-
-    return [...filtered].sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-  }, [leads, searchQuery, activeFilter, sortBy]);
-
-  const leadsByStage = useMemo(() => {
-    const grouped = LEAD_STATUSES.reduce((acc, status) => ({ ...acc, [status]: [] }), {});
-    filteredLeads.forEach(lead => {
-      const status = lead.leadStatus?.toUpperCase() || 'NEW';
-      if (grouped[status]) grouped[status].push(lead);
-    });
-    return grouped;
-  }, [filteredLeads]);
-
-  const totalValue = useMemo(() => {
-    const sum = leads.reduce((acc, lead) => {
-      const val = parseFloat(lead.value?.replace(/[^0-9.]/g, '') || 0);
-      return acc + val;
-    }, 0);
-    return `$${(sum / 1000).toFixed(1)}M`;
-  }, [leads]);
-
-  const getStageColor = (status) => {
-    switch (status) {
-      case 'NEW': return 'bg-blue-500';
-      case 'CONTACTED': return 'bg-indigo-500';
-      case 'WORKING': return 'bg-amber-500';
-      case 'NURTURING': return 'bg-purple-500';
-      case 'QUALIFIED': return 'bg-emerald-500';
-      case 'UNQUALIFIED': return 'bg-rose-500';
-      default: return 'bg-slate-400';
-    }
-  };
-
-  const getRatingBadge = (rating) => {
-    switch (rating) {
-      case 'HOT': return <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold">🔥 HOT</span>;
-      case 'WARM': return <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">☀️ WARM</span>;
-      case 'COLD': return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">❄️ COLD</span>;
-      default: return null;
-    }
+  const getRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return date.toLocaleDateString();
   };
 
   return (
-    <div className="p-8 lg:p-12 space-y-8 max-w-[1800px] mx-auto animate-in fade-in duration-700">
-
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-100 pb-8">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-5xl font-serif text-slate-900 tracking-tight mb-2">Leads</h1>
-          <p className="text-slate-400 font-medium tracking-tight">
-            <span className="text-slate-900 font-bold">{leads.length} active leads</span> ·
-            <span className="text-slate-900 font-bold ml-1">{totalValue} open pipeline</span>
+          <h1 className="page-title">Leads</h1>
+          <p className="body-text text-[#6B7280] mt-1">
+            Manage, filter, and track prospective clients.
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* View Switcher */}
-          <div className="bg-white p-1 rounded-xl border border-slate-200 flex items-center shadow-sm">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${viewMode === 'kanban' ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <LayoutGrid size={14} /> Kanban
-            </button>
-            <button
+        <div className="flex items-center gap-3">
+          <div className="bg-[#F1F5F9] p-1 rounded-[8px] flex items-center border border-[#E2E8F0]">
+            <button 
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${viewMode === 'table' ? 'bg-slate-100 text-[#122b1c]' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`p-1.5 rounded-[6px] transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-[#111827]' : 'text-[#64748B] hover:text-[#111827]'}`}
             >
-              <ListIcon size={14} /> Table
+              <List size={16} />
             </button>
-            <button
-              onClick={() => setViewMode('converted')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all ${viewMode === 'converted' ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400 hover:text-slate-600'}`}
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-[6px] transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-[#111827]' : 'text-[#64748B] hover:text-[#111827]'}`}
             >
-              <Target size={14} /> Converted
+              <LayoutGrid size={16} />
             </button>
           </div>
-
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 bg-white border border-slate-200 px-5 py-2.5 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <UploadCloud size={14} /> Import
+          <button className="btn-secondary flex items-center gap-2">
+            <Download size={16} />
+            <span>Export</span>
           </button>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#122b1c] text-white px-6 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-lg shadow-emerald-900/10 hover:shadow-xl transition-all"
-          >
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center gap-2">
             <Plus size={16} />
             <span>New Lead</span>
           </button>
@@ -178,169 +108,122 @@ const Leads = () => {
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {['All leads', 'My leads', 'Product Engineering', 'AI & Automation', 'Service Mgmt', 'Supply Chain'].map((filter) => (
+      <div className="enterprise-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between bg-white">
+        
+        {/* Status Pills */}
+        <div className="flex overflow-x-auto gap-2 pb-2 md:pb-0 hide-scrollbar w-full md:w-auto">
+          {statuses.map(status => (
             <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-5 py-2 rounded-full text-xs font-black transition-all border ${activeFilter === filter
-                ? 'bg-[#122b1c] text-white border-[#122b1c]'
-                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-                }`}
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-colors border ${
+                statusFilter === status 
+                  ? 'bg-[#166534] text-white border-[#166534]' 
+                  : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'
+              }`}
             >
-              {filter} {filter === 'All leads' ? `(${leads.length})` : ''}
+              {status}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <Search size={16} className="text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search pipeline..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="outline-none text-xs font-bold w-48 text-slate-700"
-            />
-          </div>
-          <button
-            onClick={() => setSortBy(prev => prev === 'newest' ? 'oldest' : 'newest')}
-            className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 hover:text-slate-600 transition-colors outline-none"
-          >
-            Sort: {sortBy === 'newest' ? 'Newest' : 'Oldest'}
-            {sortBy === 'newest' ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </button>
+        {/* Search */}
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+          <input
+            type="text"
+            placeholder="Search leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-[8px] text-[14px] focus:outline-none focus:border-[#166534] focus:ring-1 focus:ring-[#166534] transition-all"
+          />
         </div>
       </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center h-96 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm gap-3">
-          <Loader2 className="animate-spin text-[#122b1c]" size={36} />
-          <span className="text-sm font-bold text-[#122b1c] uppercase tracking-widest">Loading leads...</span>
-        </div>
-      ) : viewMode === 'kanban' ? (
-        <div className="overflow-x-auto pb-8 -mx-12 px-12">
-          <div className="flex gap-6 min-w-max">
-            {LEAD_STATUSES.map((status) => (
-              <div key={status} className="w-[320px] flex flex-col gap-4">
-                <div className="flex items-center justify-between px-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getStageColor(status)}`}></div>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.15em]">{status}</h3>
-                  </div>
-                  <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {leadsByStage[status]?.length || 0}
-                  </span>
-                </div>
-
-                <div className="space-y-4 min-h-[500px]">
-                  {leadsByStage[status]?.map((lead) => (
-                    <div
-                      key={lead.id}
-                      onClick={() => navigate(`/leads/${lead.id}`)}
-                      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all group cursor-pointer space-y-4"
-                    >
-                      <h4 className="font-bold text-slate-900 leading-snug group-hover:text-[#122b1c] transition-colors">
-                        {[lead.firstName, lead.lastName].filter(Boolean).join(' ') || lead.title || 'Unknown Lead'} {(lead.company || lead.account?.name) ? `(${lead.company || lead.account?.name})` : ''}
-                      </h4>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                        {lead.jobTitle || 'No Title'}
-                      </p>
-                      <div className="flex justify-between items-center pt-2">
-                        <div className="flex items-center gap-2">
-                          {getRatingBadge(lead.leadRating)}
-                          <span className="text-xs font-bold text-slate-500">Score: {lead.leadScore || 0}</span>
-                        </div>
-                        <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center font-black text-[10px] border border-slate-100 group-hover:bg-[#122b1c] group-hover:text-white transition-all">
-                          {lead.ownerInitials || lead.account?.name?.charAt(0) || '-'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {leadsByStage[status]?.length === 0 && (
-                    <div className="h-24 border-2 border-dashed border-slate-100 rounded-2xl flex items-center justify-center">
-                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No Leads</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        /* Table View */
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+      {/* Table View */}
+      {viewMode === 'table' && (
+        <div className="enterprise-card overflow-hidden bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 bg-slate-50/30">
-                  <th className="px-8 py-5">Lead Info</th>
-                  <th className="px-8 py-5">Status</th>
-                  <th className="px-8 py-5">Rating & Score</th>
-                  <th className="px-8 py-5">{viewMode === 'converted' ? 'Converted Date' : 'Due Date'}</th>
-                  <th className="px-8 py-5">Action</th>
+                <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Lead Information</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider">Score</th>
+                  <th className="px-6 py-4 text-[12px] font-semibold text-[#64748B] uppercase tracking-wider text-right">Added</th>
+                  <th className="px-6 py-4"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredLeads.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-8 py-16 text-center text-slate-400 font-medium">
-                      No leads found.
-                    </td>
-                  </tr>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {loading ? (
+                  <tr><td colSpan="6" className="text-center py-12 text-[#64748B]">Loading leads...</td></tr>
+                ) : filteredLeads.length === 0 ? (
+                  <tr><td colSpan="6" className="text-center py-12 text-[#64748B]">No leads found matching criteria.</td></tr>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <tr
-                      key={lead.id}
+                    <tr 
+                      key={lead.id} 
                       onClick={() => navigate(`/leads/${lead.id}`)}
-                      className="group hover:bg-slate-50/80 transition-all cursor-pointer"
+                      className="hover:bg-[#F8FAFC]/60 transition-colors cursor-pointer group"
                     >
-                      <td className="px-8 py-7">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-[#122b1c] rounded-2xl flex items-center justify-center text-white font-black text-base shadow-lg shadow-emerald-900/10 group-hover:scale-110 transition-transform">
-                            {(lead.firstName?.[0] || lead.company?.[0] || '-').toUpperCase()}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#F1F5F9] text-[#475569] rounded-full flex items-center justify-center text-[14px] font-bold border border-[#E2E8F0]">
+                            {(lead.company || lead.account?.name || lead.title || 'L').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <h4 className="font-bold text-slate-900 tracking-tight leading-tight mb-1">{[lead.firstName, lead.lastName].filter(Boolean).join(' ') || lead.title || 'Unknown Lead'}</h4>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">{lead.company || lead.account?.name || '-'}</p>
+                            <p className="text-[14px] font-semibold text-[#111827] group-hover:text-[#166534] transition-colors leading-snug">
+                              {`${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.title}
+                            </p>
+                            <p className="text-[13px] text-[#64748B] leading-snug">
+                              {lead.account?.name || lead.company || 'No Company specified'}
+                            </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-7">
-                        <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider border ${lead.leadStatus === 'CONVERTED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          lead.leadStatus === 'QUALIFIED' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                            lead.leadStatus === 'WORKING' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-slate-50 text-slate-500 border-slate-100'
-                          }`}>
-                          {lead.leadStatus}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          {lead.email ? (
+                            <div className="flex items-center gap-1.5 text-[13px] text-[#475569]">
+                              <Mail size={14} className="text-[#94A3B8]" />
+                              {lead.email}
+                            </div>
+                          ) : <span className="text-[13px] text-[#CBD5E1]">-</span>}
+                          {lead.phone ? (
+                            <div className="flex items-center gap-1.5 text-[13px] text-[#475569]">
+                              <Phone size={14} className="text-[#94A3B8]" />
+                              {lead.phone}
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${
+                          lead.leadStatus === 'QUALIFIED' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                          lead.leadStatus === 'WORKING' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' :
+                          lead.leadStatus === 'CONTACTED' ? 'bg-[#3B82F6]/10 text-[#3B82F6]' :
+                          lead.leadStatus === 'NURTURING' ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]' :
+                          'bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]'
+                        }`}>
+                          {lead.leadStatus || 'NEW'}
                         </span>
                       </td>
-                      <td className="px-8 py-7">
-                        <div className="flex flex-col gap-2">
-                          {getRatingBadge(lead.leadRating)}
-                          <span className="text-xs font-bold text-slate-600">Score: {lead.leadScore || 0}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-7">
-                        <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
-                          <Calendar size={14} className="text-slate-300" />
-                          {viewMode === 'converted'
-                            ? (lead.convertedDate ? new Date(lead.convertedDate).toLocaleDateString() : '-')
-                            : (lead.dueDate ? new Date(lead.dueDate).toLocaleDateString() : 'TBD')}
-                        </div>
-                      </td>
-                      <td className="px-8 py-7">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); navigate(`/leads/${lead.id}`); }}
-                            className="p-3 text-slate-300 hover:text-slate-900 hover:bg-white rounded-xl transition-all"
-                          >
-                            <ExternalLink size={20} />
-                          </button>
+                          <span className="text-[14px] font-bold text-[#111827]">{lead.leadScore || 0}</span>
+                          {lead.leadRating === 'HOT' && <span className="text-[16px]">🔥</span>}
+                          {lead.leadRating === 'WARM' && <span className="text-[16px]">☀️</span>}
+                          {lead.leadRating === 'COLD' && <span className="text-[16px]">❄️</span>}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-[13px] text-[#64748B]">{getRelativeTime(lead.createdAt)}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-[#94A3B8] hover:text-[#111827] transition-colors p-1 rounded-md hover:bg-[#E2E8F0] opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); }}>
+                          <MoreHorizontal size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -348,22 +231,60 @@ const Leads = () => {
               </tbody>
             </table>
           </div>
+          {/* Pagination Footer */}
+          <div className="px-6 py-4 border-t border-[#E5E7EB] flex items-center justify-between bg-[#F8FAFC]">
+            <span className="text-[13px] text-[#64748B]">Showing <span className="font-semibold text-[#111827]">{filteredLeads.length}</span> results</span>
+            <div className="flex gap-2">
+              <button className="p-1.5 rounded-md text-[#94A3B8] border border-[#E2E8F0] bg-white cursor-not-allowed"><ChevronLeft size={16} /></button>
+              <button className="p-1.5 rounded-md text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-[#F1F5F9]"><ChevronRight size={16} /></button>
+            </div>
+          </div>
         </div>
       )}
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Register New Potential Opportunity"
-      >
-        <LeadForm onSuccess={() => { setIsModalOpen(false); fetchLeads(); }} />
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredLeads.map(lead => (
+            <div key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="enterprise-card p-5 hover:border-[#166534] transition-colors cursor-pointer group flex flex-col bg-white">
+              <div className="flex justify-between items-start mb-4">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase ${
+                  lead.leadStatus === 'QUALIFIED' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                  lead.leadStatus === 'WORKING' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' :
+                  lead.leadStatus === 'CONTACTED' ? 'bg-[#3B82F6]/10 text-[#3B82F6]' :
+                  lead.leadStatus === 'NURTURING' ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]' :
+                  'bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]'
+                }`}>
+                  {lead.leadStatus || 'NEW'}
+                </span>
+                <button className="text-[#94A3B8] hover:text-[#111827] p-1" onClick={(e) => { e.stopPropagation(); }}>
+                  <MoreHorizontal size={16} />
+                </button>
+              </div>
+              <h4 className="text-[16px] font-bold text-[#111827] leading-tight mb-1 group-hover:text-[#166534] transition-colors">{lead.title}</h4>
+              <p className="text-[13px] text-[#64748B] mb-4">{lead.account?.name || lead.company || 'No Company'}</p>
+              
+              <div className="mt-auto pt-4 border-t border-[#F1F5F9] flex justify-between items-end">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] text-[#64748B] uppercase font-semibold tracking-wider">Score</span>
+                  <div className="flex items-center gap-1 text-[14px] font-bold text-[#111827]">
+                    {lead.leadScore || 0}
+                    {lead.leadRating === 'HOT' && '🔥'}
+                  </div>
+                </div>
+                <div className="w-8 h-8 bg-[#F1F5F9] text-[#475569] rounded-full flex items-center justify-center text-[11px] font-bold border border-[#E2E8F0]" title="Added recently">
+                  {getRelativeTime(lead.createdAt)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} hideHeader={true}>
+        <LeadForm onSuccess={() => { setIsModalOpen(false); fetchLeads(); }} onClose={() => setIsModalOpen(false)} />
       </Modal>
 
-      <ImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => { setIsImportModalOpen(false); fetchLeads(); }}
-      />
     </div>
   );
 };

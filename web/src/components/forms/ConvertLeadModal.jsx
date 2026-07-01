@@ -19,6 +19,10 @@ const ConvertLeadModal = ({ lead, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState(null); // Will hold the response data on success
   const [accounts, setAccounts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const filteredAccounts = accounts.filter(acc => 
+    acc && acc.name && acc.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   // Section Expansion State
   const [expandedSection, setExpandedSection] = useState('account');
@@ -26,16 +30,12 @@ const ConvertLeadModal = ({ lead, onClose }) => {
   // Form State
   const [accountMode, setAccountMode] = useState('new');
   const [contactMode, setContactMode] = useState('new');
-  const [opportunityMode, setOpportunityMode] = useState('new');
-  const [createOpportunity, setCreateOpportunity] = useState(true);
 
   const [formData, setFormData] = useState({
     accountName: lead?.company || lead?.account?.name || '',
     existingAccountId: lead?.accountId || '',
     
-    contactFullName: `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim(),
-    
-    opportunityName: `${lead?.company || lead?.account?.name || ''} - ${lead?.firstName || ''} ${lead?.lastName || ''}`.trim().replace(/^- /, '')
+    contactFullName: `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim()
   });
 
   useEffect(() => {
@@ -68,8 +68,7 @@ const ConvertLeadModal = ({ lead, onClose }) => {
         contactPhone: lead?.phone || '',
         contactJobTitle: lead?.jobTitle || '',
         
-        createDeal: createOpportunity,
-        title: createOpportunity ? formData.opportunityName : undefined,
+        createDeal: true,
       };
 
       const res = await api.post(`/deals/convert/${lead.id}`, payload);
@@ -77,9 +76,14 @@ const ConvertLeadModal = ({ lead, onClose }) => {
       // Artificial delay for better UX
       setTimeout(() => {
         setSuccessData({
-          account: res.data.account || { name: formData.accountName || accounts.find(a => a.id === formData.existingAccountId)?.name },
-          contact: res.data.contact || { name: formData.contactFullName },
-          opportunity: createOpportunity ? (res.data.deal || { name: formData.opportunityName }) : null
+          deal: res.data.deal ? { id: res.data.deal.id, title: res.data.deal.title } : null,
+          account: { 
+            id: res.data.accountId, 
+            name: accountMode === 'existing' 
+              ? (accounts.find(a => a.id === res.data.accountId)?.name || 'Existing Account')
+              : (formData.accountName || 'New Account')
+          },
+          contact: { id: res.data.contactId, name: formData.contactFullName }
         });
         setLoading(false);
       }, 800);
@@ -116,63 +120,66 @@ const ConvertLeadModal = ({ lead, onClose }) => {
           </div>
 
           <div className="p-8 bg-slate-50/50">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 ${successData.deal ? 'md:grid-cols-3 max-w-4xl' : 'md:grid-cols-2 max-w-2xl'} gap-6 mx-auto`}>
               
               {/* Account Card */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div 
+                className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow hover:border-blue-200"
+                onClick={() => { onClose(); navigate(`/accounts/${successData.account.id}`); }}
+              >
                 <h4 className="text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-4">Account</h4>
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-600 flex flex-shrink-0 items-center justify-center text-white">
                     <Building2 size={16} />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-blue-600 hover:underline cursor-pointer">{successData.account?.name || formData.accountName}</h5>
+                    <h5 className="font-semibold text-blue-600 hover:underline cursor-pointer">{successData.account.name}</h5>
                     <div className="mt-2 text-xs text-slate-600 space-y-1">
-                      <p><span className="text-slate-400">Account Owner:</span> You</p>
+                      <p><span className="text-slate-400">Industry:</span> {lead?.industry || 'Unknown'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Contact Card */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div 
+                className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow hover:border-blue-200"
+                onClick={() => { onClose(); navigate('/contacts'); }}
+              >
                 <h4 className="text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-4">Contact</h4>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-600 flex flex-shrink-0 items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex flex-shrink-0 items-center justify-center text-white">
                     <User size={16} />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-blue-600 hover:underline cursor-pointer">{successData.contact?.name || formData.contactFullName}</h5>
+                    <h5 className="font-semibold text-blue-600 hover:underline cursor-pointer">{successData.contact.name}</h5>
                     <div className="mt-2 text-xs text-slate-600 space-y-1">
-                      <p><span className="text-slate-400">Title:</span> {lead?.jobTitle || 'N/A'}</p>
-                      <p><span className="text-slate-400">Email:</span> {lead?.email || 'N/A'}</p>
+                      <p className="truncate"><span className="text-slate-400">Email:</span> {formData.contactEmail || lead?.email || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Opportunity Card */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <h4 className="text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-4">Opportunity</h4>
-                {createOpportunity ? (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500 flex flex-shrink-0 items-center justify-center text-white">
-                      <Target size={16} />
-                    </div>
-                    <div>
-                      <h5 className="font-semibold text-blue-600 hover:underline cursor-pointer">{successData.opportunity?.name || formData.opportunityName}</h5>
-                      <div className="mt-2 text-xs text-slate-600 space-y-1">
-                        <p><span className="text-slate-400">Account Name:</span> {successData.account?.name || formData.accountName}</p>
-                        <p><span className="text-slate-400">Opportunity Owner:</span> You</p>
-                      </div>
+              {/* Deal Card */}
+              {successData.deal && (
+              <div 
+                className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow hover:border-purple-200"
+                onClick={() => { onClose(); navigate(`/deals/${successData.deal.id}`); }}
+              >
+                <h4 className="text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-4">Deal</h4>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-600 flex flex-shrink-0 items-center justify-center text-white">
+                    <Target size={16} />
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-purple-600 hover:underline cursor-pointer">{successData.deal.title}</h5>
+                    <div className="mt-2 text-xs text-slate-600 space-y-1">
+                      <p><span className="text-slate-400">Stage:</span> Discovery</p>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-20 text-sm text-slate-400 italic">
-                    Not created
-                  </div>
-                )}
+                </div>
               </div>
+              )}
 
             </div>
           </div>
@@ -183,15 +190,6 @@ const ConvertLeadModal = ({ lead, onClose }) => {
               className="px-5 py-2 border border-slate-300 text-slate-700 bg-white rounded-full font-semibold text-sm hover:bg-slate-50 transition-colors"
             >
               Go to Leads
-            </button>
-            <button 
-              onClick={() => {
-                onClose();
-                navigate(successData.opportunity?.id ? `/deals/${successData.opportunity.id}` : '/opportunities');
-              }}
-              className="px-5 py-2 bg-blue-600 text-white rounded-full font-semibold text-sm hover:bg-blue-700 transition-colors"
-            >
-              View Opportunity
             </button>
           </div>
         </div>
@@ -271,6 +269,17 @@ const ConvertLeadModal = ({ lead, onClose }) => {
                   </label>
                   <div className="pl-6">
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Account Search</label>
+                    <div className="relative mb-2">
+                      <input
+                        type="text"
+                        placeholder="Type to filter accounts..."
+                        className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        disabled={accountMode !== 'existing'}
+                      />
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    </div>
                     <div className="relative">
                       <select 
                         className="w-full pl-3 pr-8 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm appearance-none bg-white"
@@ -278,16 +287,17 @@ const ConvertLeadModal = ({ lead, onClose }) => {
                         onChange={(e) => setFormData({...formData, existingAccountId: e.target.value})}
                         disabled={accountMode !== 'existing'}
                       >
-                        <option value="">Search for matching accounts...</option>
-                        {accounts.map(acc => (
+                        <option value="">Select an account...</option>
+                        {filteredAccounts.map(acc => (
                           <option key={acc.id} value={acc.id}>{acc.name}</option>
                         ))}
                       </select>
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                     </div>
-                    <div className="mt-2 h-20 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center">
+                    <div className="mt-2 h-12 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center">
                       <span className="text-xs text-slate-400">
-                        {accountMode === 'existing' && formData.existingAccountId ? '1 Account Selected' : '0 Account Matches'}
+                        {accountMode === 'existing' && formData.existingAccountId 
+                          ? '1 Account Selected' 
+                          : `${filteredAccounts.length} Account Matches`}
                       </span>
                     </div>
                   </div>
@@ -350,85 +360,6 @@ const ConvertLeadModal = ({ lead, onClose }) => {
                       <span className="text-xs text-slate-400">0 Contact Matches detected</span>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* OPPORTUNITY SECTION */}
-          <div className="border-b border-slate-200 bg-white">
-            <button 
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-              onClick={() => toggleSection('opportunity')}
-            >
-              <div className="flex items-center gap-3">
-                {expandedSection === 'opportunity' ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
-                <span className="font-semibold text-slate-800">Opportunity</span>
-              </div>
-              {opportunityMode === 'new' && formData.opportunityName && createOpportunity && expandedSection !== 'opportunity' && (
-                <span className="text-sm text-slate-500">{formData.opportunityName} (New)</span>
-              )}
-              {!createOpportunity && expandedSection !== 'opportunity' && (
-                <span className="text-sm text-slate-500 italic">Do not create</span>
-              )}
-            </button>
-            
-            {expandedSection === 'opportunity' && (
-              <div className="px-12 pb-6 space-y-6">
-                <div className="flex gap-8">
-                  <div className="flex-1 space-y-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        checked={opportunityMode === 'new' && createOpportunity} 
-                        onChange={() => {
-                          setOpportunityMode('new');
-                          setCreateOpportunity(true);
-                        }}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-semibold text-slate-700">Create New Opportunity</span>
-                    </label>
-                    <div className="pl-6">
-                      <input 
-                        type="text" 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                        value={formData.opportunityName}
-                        onChange={(e) => setFormData({...formData, opportunityName: e.target.value})}
-                        disabled={opportunityMode !== 'new' || !createOpportunity}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="w-px bg-slate-200"></div>
-                  
-                  <div className="flex-1 space-y-4">
-                    <label className="flex items-center gap-2 cursor-pointer text-slate-400">
-                      <input 
-                        type="radio" 
-                        disabled
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm font-semibold">Choose Existing Opportunity</span>
-                    </label>
-                    <div className="pl-6">
-                      <div className="h-10 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center">
-                        <span className="text-xs text-slate-400">To find opportunity, choose an existing account</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-slate-100 pl-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={!createOpportunity}
-                      onChange={(e) => setCreateOpportunity(!e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded border-slate-300"
-                    />
-                    <span className="text-sm text-slate-600">Don't create an opportunity upon conversion</span>
-                  </label>
                 </div>
               </div>
             )}

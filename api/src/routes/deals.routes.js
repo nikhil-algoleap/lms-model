@@ -13,8 +13,10 @@ router.get('/:id', dealsController.getDealById);
 router.put('/:id', dealsController.updateDeal);
 router.post('/convert/:id', dealsController.convertLead);
 router.post('/:id/stage', dealsController.updateStage);
-router.post('/:id/stakeholders', dealsController.addStakeholder);
-router.post('/:id/competitors', dealsController.addCompetitor);
+
 router.post('/:id/documents', upload.single('file'), dealsController.uploadDocument);
+router.post('/:id/activities', dealsController.addActivity);
+router.post('/:id/initialize-templates', dealsController.initializeTemplates);
+
 
 module.exports = router;

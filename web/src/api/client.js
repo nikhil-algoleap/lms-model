@@ -19,4 +19,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercept 401 responses to logout stale sessions
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('lms_token');
+      localStorage.removeItem('lms_user');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
+

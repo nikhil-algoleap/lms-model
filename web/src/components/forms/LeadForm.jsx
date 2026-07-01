@@ -1,572 +1,519 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import api from '../../api/client';
 import {
-  CheckCircle2,
+  Building2,
+  User,
+  Mail,
+  Phone,
+  Briefcase,
+  Globe,
+  MapPin,
+  Save,
   Loader2,
-  Calendar,
-  ChevronDown,
-  Upload
+  X,
+  Target
 } from 'lucide-react';
 
-const SearchableSelect = ({ label, placeholder, value, onChange, options, required, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState(value || '');
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { Input } from '../ui/input';
+import { Button } from '../ui/Button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '../ui/form';
+import { Combobox } from '../ui/combobox';
 
-  useEffect(() => {
-    setSearch(value || '');
-  }, [value]);
+// Zod Schema
+const leadSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  title: z.string().optional(),
+  company: z.string().min(1, 'Company name is required'),
+  website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  industry: z.string().optional(),
+  leadSource: z.string().optional(),
+  leadStatus: z.string().optional(),
+  leadRating: z.string().optional(),
+  practiceLeader: z.string().optional(),
+  ownerId: z.string().optional(),
+  street: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  notes: z.string().optional(),
+});
 
-  const filteredOptions = options.filter(opt =>
-    opt && opt.toLowerCase().includes(search.toLowerCase())
-  );
+const LEAD_SOURCES = [
+  { label: 'Website', value: 'WEBSITE' },
+  { label: 'Referral', value: 'REFERRAL' },
+  { label: 'LinkedIn', value: 'LINKEDIN' },
+  { label: 'Conference', value: 'CONFERENCE' },
+  { label: 'Cold Call', value: 'COLD_CALL' },
+];
 
-  const isExactMatch = options.some(opt =>
-    opt && opt.toLowerCase() === search.trim().toLowerCase()
-  );
+const LEAD_STATUSES = [
+  { label: 'New', value: 'NEW' },
+  { label: 'Contacted', value: 'CONTACTED' },
+  { label: 'Working', value: 'WORKING' },
+  { label: 'Qualified', value: 'QUALIFIED' },
+  { label: 'Unqualified', value: 'UNQUALIFIED' },
+];
 
-  return (
-    <div className="space-y-2 relative">
-      <label className="text-sm font-bold text-slate-700">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      <div className="relative">
-        <input
-          required={required}
-          type="text"
-          placeholder={placeholder}
-          disabled={disabled}
-          className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900 bg-white"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            onChange(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => {
-            setTimeout(() => setIsOpen(false), 200);
-          }}
-        />
-        <ChevronDown 
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer pointer-events-none" 
-          size={18} 
-        />
-      </div>
+const INDUSTRIES = [
+  { label: 'Technology', value: 'Technology' },
+  { label: 'Financial Services', value: 'Financial Services' },
+  { label: 'Healthcare', value: 'Healthcare' },
+  { label: 'Manufacturing', value: 'Manufacturing' },
+  { label: 'Retail', value: 'Retail' },
+];
 
-      {isOpen && (
-        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-2">
-          {search.trim() !== '' && !isExactMatch && (
-            <div
-              className="px-6 py-3 text-sm text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer font-bold border-b border-slate-100"
-              onMouseDown={() => {
-                const newValue = search.trim();
-                setSearch(newValue);
-                onChange(newValue);
-              }}
-            >
-              + Add "{search.trim()}" as new {label.toLowerCase()}
-            </div>
-          )}
-
-          {filteredOptions.map((opt, i) => (
-            <div
-              key={i}
-              className="px-6 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
-              onMouseDown={() => {
-                setSearch(opt);
-                onChange(opt);
-              }}
-            >
-              {opt}
-            </div>
-          ))}
-
-          {filteredOptions.length === 0 && search.trim() === '' && (
-            <div className="px-6 py-3 text-sm text-slate-400 italic">
-              No options available
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const LeadForm = ({ onSuccess, prefilledAccountName }) => {
+const LeadForm = ({ onSuccess, onCancel, onClose, prefilledAccountName, initialData }) => {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [file, setFile] = useState(null);
-
-  // Dropdown lists
-  const [practiceLeaders, setPracticeLeaders] = useState(['Prashanth', 'Sanjay']);
-  const [clientManagers, setClientManagers] = useState(['Gopi (me)', 'Nikhil Y']);
-  const [practiceAreas, setPracticeAreas] = useState([
-    'SRE-observability',
-    'Salesforce',
-    'Microsoft Cloud',
-    'Google Cloud',
-    'AWS',
-    'ERP',
-    'Oracle',
-    'Adobe',
-    'Data practice',
-    'Databricks',
-    'Workday',
-    'Pega',
-    'Supply Chain'
-  ]);
-  const [deliveryFormats, setDeliveryFormats] = useState([
-    'Studio MVP Enhancement',
-    'TM- Staff Augmentation',
-    'Project engagement',
-    'Support services',
-    'Manager service',
-    'Managed Services'
-  ]);
-
-  const [formData, setFormData] = useState({
-    accountName: prefilledAccountName || '',
-    primaryContact: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    company: '',
-    jobTitle: '',
-    industry: '',
-    leadStatus: 'NEW',
-    leadRating: 'COLD',
-    serviceLine: '',
-    practiceArea: '',
-    deliveryFormat: '',
-    value: '',
-    estimatedDuration: '',
-    dueDate: '',
-    probability: '20',
-    source: 'Existing Client',
-    geography: 'Central Europe',
-    practiceLeader: '',
-    clientManager: '',
-    description: ''
-  });
+  const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    const fetchSelectData = async () => {
+    const fetchUsers = async () => {
       try {
-        // Fetch accounts
-        try {
-          const accRes = await api.get('/accounts');
-          setAccounts(accRes.data);
-        } catch (e) {
-          console.error('Error fetching accounts:', e);
-        }
-
-        // Fetch contacts
-        try {
-          const conRes = await api.get('/contacts');
-          setContacts(conRes.data);
-        } catch (e) {
-          console.error('Error fetching contacts:', e);
-        }
-
-        // Fetch leads to extract existing practice leaders, client managers, practice areas, and delivery formats dynamically
-        try {
-          const leadRes = await api.get('/leads');
-          const uniqueLeaders = new Set(['Prashanth', 'Sanjay']);
-          const uniqueManagers = new Set(['Gopi (me)', 'Nikhil Y']);
-          const uniquePracticeAreas = new Set([
-            'SRE-observability',
-            'Salesforce',
-            'Microsoft Cloud',
-            'Google Cloud',
-            'AWS',
-            'ERP',
-            'Oracle',
-            'Adobe',
-            'Data practice',
-            'Databricks',
-            'Workday',
-            'Pega',
-            'Supply Chain'
-          ]);
-          const uniqueDeliveryFormats = new Set([
-            'Studio MVP Enhancement',
-            'TM- Staff Augmentation',
-            'Project engagement',
-            'Support services',
-            'Manager service',
-            'Managed Services'
-          ]);
-
-          if (leadRes.data && Array.isArray(leadRes.data)) {
-            leadRes.data.forEach(lead => {
-              if (lead.practiceLeader) uniqueLeaders.add(lead.practiceLeader);
-              if (lead.clientManager) uniqueManagers.add(lead.clientManager);
-              if (lead.practiceArea) uniquePracticeAreas.add(lead.practiceArea);
-              if (lead.deliveryFormat) uniqueDeliveryFormats.add(lead.deliveryFormat);
-            });
-          }
-          setPracticeLeaders(Array.from(uniqueLeaders));
-          setClientManagers(Array.from(uniqueManagers));
-          setPracticeAreas(Array.from(uniquePracticeAreas));
-          setDeliveryFormats(Array.from(uniqueDeliveryFormats));
-        } catch (e) {
-          console.error('Error fetching leads for selection:', e);
-        }
+        const res = await api.get('/admin/users');
+        setUsers(res.data);
       } catch (err) {
-        console.error('General fetch error:', err);
+        console.error('Failed to fetch users', err);
       }
     };
-    fetchSelectData();
+    fetchUsers();
   }, []);
 
-  const handlePrimaryContactChange = (val) => {
-    const matchedContact = contacts.find(c => c.fullName === val);
-    if (matchedContact) {
-      const nameParts = val.trim().split(/\s+/);
-      const fName = nameParts[0] || '';
-      const lName = nameParts.slice(1).join(' ') || '';
+  const isEditing = !!initialData;
 
-      setFormData(prev => ({
-        ...prev,
-        primaryContact: val,
-        firstName: fName,
-        lastName: lName,
-        email: matchedContact.email || '',
-        phone: matchedContact.phone || '',
-        jobTitle: matchedContact.title || '',
-        company: matchedContact.account?.name || matchedContact.company || prev.company || '',
-        accountName: matchedContact.account?.name || prev.accountName || ''
-      }));
-    } else {
-      const nameParts = val.trim().split(/\s+/);
-      const fName = nameParts[0] || '';
-      const lName = nameParts.slice(1).join(' ') || '';
-      
-      setFormData(prev => ({
-        ...prev,
-        primaryContact: val,
-        firstName: fName,
-        lastName: lName
-      }));
-    }
-  };
+  const form = useForm({
+    resolver: zodResolver(leadSchema),
+    defaultValues: {
+      firstName: initialData?.firstName || '',
+      lastName: initialData?.lastName || '',
+      email: initialData?.email || '',
+      phone: initialData?.phone || '',
+      title: initialData?.title || '',
+      company: initialData?.company || prefilledAccountName || '',
+      website: initialData?.website || '',
+      industry: initialData?.industry || '',
+      leadSource: initialData?.leadSource || 'WEBSITE',
+      leadStatus: initialData?.leadStatus || 'NEW',
+      leadRating: initialData?.leadRating || 'WARM',
+      practiceLeader: initialData?.practiceLeader || '',
+      ownerId: initialData?.ownerId || '',
+      street: initialData?.street || '',
+      city: initialData?.city || '',
+      state: initialData?.state || '',
+      postalCode: initialData?.postalCode || '',
+      country: initialData?.country || '',
+      notes: initialData?.notes || '',
+    },
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setLoading(true);
+    setError('');
     try {
-      // 1. Create Lead
-      const leadRes = await api.post('/leads', {
-        ...formData,
-        company: formData.company || formData.accountName,
-        probability: formData.probability ? parseInt(formData.probability) : undefined,
-        estimatedDuration: formData.estimatedDuration ? parseInt(formData.estimatedDuration) : undefined
-      });
-
-      const leadId = leadRes.data.id;
-
-      // 2. Upload file if exists
-      if (file && leadId) {
-        const fileData = new FormData();
-        fileData.append('file', file);
-        await api.post(`/leads/${leadId}/upload`, fileData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+      if (isEditing) {
+        await api.put(`/leads/${initialData.id}`, data);
+      } else {
+        await api.post('/leads', data);
       }
-
-      setSuccess(true);
-      setTimeout(() => onSuccess(), 2000);
+      if (onSuccess) onSuccess();
     } catch (err) {
-      console.error('Error:', err);
+      setError(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} lead.`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) return (
-    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
-      <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-6">
-        <CheckCircle2 size={48} />
-      </div>
-      <h3 className="text-3xl font-serif font-bold text-slate-900">Lead Successfully Created</h3>
-      <p className="text-slate-400 font-medium mt-2">Opportunity has been assigned and registered.</p>
-    </div>
-  );
-
   return (
-    <div className="bg-[#fcfbf9] min-h-screen p-8 lg:p-20">
-      <div className="max-w-4xl mx-auto space-y-12">
-
-        {/* Form Title */}
-        <div className="space-y-4">
-          <h1 className="text-5xl font-serif text-slate-900 tracking-tight">Create new lead</h1>
-          <p className="text-slate-500 font-medium text-lg">Capture a qualified opportunity and assign it to a practice leader</p>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 bg-[#F8FAFC] h-full w-full">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between shadow-sm shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-[8px] flex items-center justify-center ${isEditing ? 'bg-blue-100 text-blue-600' : 'bg-[#166534]/10 text-[#166534]'}`}>
+              <Target size={20} />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-bold text-[#111827]">{isEditing ? 'Edit Lead' : 'Create New Lead'}</h1>
+              <p className="text-[12px] text-[#6B7280]">{isEditing ? 'Update lead information.' : 'Enter detailed prospect information.'}</p>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white p-12 rounded-[2rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] space-y-10">
+        {error && (
+          <div className="mx-8 mt-6 bg-[#FEF2F2] border border-[#FEE2E2] text-[#DC2626] text-[13px] font-semibold px-4 py-3 rounded-[8px]">
+            {error}
+          </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">First name</label>
-              <input
-                type="text"
-                placeholder="First name"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+        {/* Scrollable Form Content */}
+        <div className="flex-1 overflow-y-auto p-8 max-w-[1200px] mx-auto w-full space-y-6">
+          
+          {/* Section: Contact Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <User size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="John" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Last name</label>
-              <input
-                type="text"
-                placeholder="Last name"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Last Name <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" hasError={!!fieldState.error} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Email address <span className="text-rose-500">*</span></label>
-              <input
-                required
-                type="email"
-                placeholder="name@company.com"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <Mail size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="john.doe@example.com" type="email" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Phone number <span className="text-rose-500">*</span></label>
-              <input
-                required
-                type="tel"
-                placeholder="+1 (555) 000-0000"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <Phone size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 000-0000" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Job Title</label>
-              <input
-                type="text"
-                placeholder="e.g. VP of Engineering"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.jobTitle}
-                onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Job Title</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <Briefcase size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="VP of Sales" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Company <span className="text-rose-500">*</span></label>
-              <input
-                required
-                type="text"
-                placeholder="Company Name"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+            </CardContent>
+          </Card>
+
+          {/* Section: Company Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Company Name <span className="text-red-500">*</span></FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <Building2 size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="Acme Corp" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-10">
-            <SearchableSelect
-              label="Account"
-              placeholder="Search existing or type new account..."
-              value={formData.accountName}
-              onChange={(val) => setFormData({ ...formData, accountName: val })}
-              options={accounts.map(acc => acc.name)}
-              required={true}
-              disabled={!!prefilledAccountName}
-            />
-            <SearchableSelect
-              label="Primary Contact"
-              placeholder="Search existing or type new contact..."
-              value={formData.primaryContact}
-              onChange={handlePrimaryContactChange}
-              options={contacts.map(c => c.fullName).filter(Boolean)}
-              required={false}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Industry</label>
-              <input
-                type="text"
-                placeholder="e.g., Logistics, Banking, Healthcare"
-                className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900"
-                value={formData.industry}
-                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <Globe size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="https://acme.com" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Leads source</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.source} onChange={(e) => setFormData({ ...formData, source: e.target.value })}>
-                  <option value="Existing Client">Existing Client</option>
-                  <option value="Referral">Referral</option>
-                  <option value="Website">Website</option>
-                  <option value="Cold Outreach">Cold Outreach</option>
-                  <option value="Event/Conference">Event/Conference</option>
-                  <option value="Partner">Partner</option>
-                  <option value="Other">Other</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
-          </div>
+              <FormField
+                control={form.control}
+                name="industry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Industry</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={INDUSTRIES}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Industry"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Service line <span className="text-rose-500">*</span></label>
-              <div className="relative">
-                <select required className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.serviceLine} onChange={(e) => setFormData({ ...formData, serviceLine: e.target.value })}>
-                  <option value="">Select service line...</option>
-                  <option>AI & Automation</option>
-                  <option>Product Engineering</option>
-                  <option>Service Management</option>
-                  <option>Cloud Migration</option>
-                  <option>Cyber Security</option>
-                  <option>Data Analytics</option>
-                  <option>Digital Experience</option>
-                  <option>Enterprise Resource Planning</option>
-                  <option>Managed Services</option>
-                  <option>Business Transformation</option>
-                  <option>Sustainability & ESG</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
-            <SearchableSelect
-              label="Practice Area"
-              placeholder="Search or type new practice area..."
-              value={formData.practiceArea}
-              onChange={(val) => setFormData({ ...formData, practiceArea: val })}
-              options={practiceAreas}
-              required={false}
-            />
-          </div>
+          {/* Section: Pipeline Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pipeline Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="leadSource"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lead Source</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={LEAD_SOURCES}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Source"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="leadStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={LEAD_STATUSES}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Status"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="leadRating"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rating</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={[
+                          { label: 'Hot', value: 'HOT' },
+                          { label: 'Warm', value: 'WARM' },
+                          { label: 'Cold', value: 'COLD' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Rating"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="practiceLeader"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Practice Leader</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <User size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="e.g. Sarah Jenkins" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ownerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={users.map(u => ({ label: u.fullName || u.email, value: u.id }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Owner..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-2 gap-10">
-            <SearchableSelect
-              label="Delivery Format"
-              placeholder="Search or type new delivery format..."
-              value={formData.deliveryFormat}
-              onChange={(val) => setFormData({ ...formData, deliveryFormat: val })}
-              options={deliveryFormats}
-              required={false}
-            />
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Estimated revenue (USD) <span className="text-rose-500">*</span></label>
-              <input required type="number" className="w-full border border-slate-200 px-6 py-4 rounded-xl font-medium" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
-            </div>
-          </div>
+          {/* Section: Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Address</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="street"
+                render={({ field, fieldState }) => (
+                  <FormItem className="lg:col-span-3">
+                    <FormLabel>Street Address</FormLabel>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                        <MapPin size={16} />
+                      </div>
+                      <FormControl>
+                        <Input placeholder="123 Market St, Suite 100" className="pl-10" hasError={!!fieldState.error} {...field} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="San Francisco" hasError={!!fieldState.error} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>State / Province</FormLabel>
+                    <FormControl>
+                      <Input placeholder="CA" hasError={!!fieldState.error} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="postalCode"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Postal Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="94105" hasError={!!fieldState.error} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <Input placeholder="United States" hasError={!!fieldState.error} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Estimated duration (months)</label>
-              <input type="number" className="w-full border border-slate-200 px-6 py-4 rounded-xl font-medium" value={formData.estimatedDuration} onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Expected start date</label>
-              <input type="date" className="w-full border border-slate-200 px-6 py-4 rounded-xl font-medium" value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} />
-            </div>
-          </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-10">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Lead rating</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.leadRating} onChange={(e) => setFormData({ ...formData, leadRating: e.target.value })}>
-                  <option value="HOT">🔥 Hot</option>
-                  <option value="WARM">☀️ Warm</option>
-                  <option value="COLD">❄️ Cold</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Lead status</label>
-              <div className="relative">
-                <select className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none appearance-none bg-white font-medium" value={formData.leadStatus} onChange={(e) => setFormData({ ...formData, leadStatus: e.target.value })}>
-                  <option value="NEW">New</option>
-                  <option value="CONTACTED">Contacted</option>
-                  <option value="QUALIFIED">Qualified</option>
-                  <option value="UNQUALIFIED">Unqualified</option>
-                  <option value="LOST">Lost</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              </div>
-            </div>
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 z-10 bg-white border-t border-[#E5E7EB] px-6 py-4 flex items-center justify-end shadow-sm mt-auto shrink-0">
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="ghost" onClick={onCancel || onClose || (() => window.history.back())}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-[#166534] hover:bg-[#15803d] text-white h-10 px-6 min-w-[120px] rounded-[8px] shadow-sm"
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save size={16} className="mr-2" /> {isEditing ? 'Update Lead' : 'Save Lead'}</>}
+            </Button>
           </div>
-
-          <div className="grid grid-cols-2 gap-10">
-            <SearchableSelect
-              label="Practice Leader"
-              placeholder="Search existing or type new leader..."
-              value={formData.practiceLeader}
-              onChange={(val) => setFormData({ ...formData, practiceLeader: val })}
-              options={practiceLeaders}
-              required={false}
-            />
-            <SearchableSelect
-              label="Owner (Client Manager)"
-              placeholder="Search existing or type new owner..."
-              value={formData.clientManager}
-              onChange={(val) => setFormData({ ...formData, clientManager: val })}
-              options={clientManagers}
-              required={false}
-            />
-          </div>
-
-          {/* NEW SECTION: DESCRIPTION */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Description / notes</label>
-            <textarea
-              placeholder="Background, opportunity context, competitive landscape, stakeholders..."
-              className="w-full border border-slate-200 px-6 py-4 rounded-xl outline-none focus:border-slate-400 font-medium text-slate-900 min-h-[150px] resize-y"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            ></textarea>
-          </div>
-
-          {/* NEW SECTION: FILE UPLOAD */}
-          <div className="space-y-4">
-            <label className="text-sm font-bold text-slate-700">Attach files</label>
-            <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-[2rem] p-12 flex flex-col items-center justify-center gap-4 group hover:border-[#122b1c]/30 hover:bg-slate-50 transition-all cursor-pointer relative">
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setFile(e.target.files[0])} />
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <Upload className="text-slate-400 group-hover:text-[#122b1c]" size={32} />
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-slate-900">{file ? file.name : 'Drag & drop or click to upload'}</p>
-                <p className="text-sm text-slate-400 font-medium mt-1">SOWs, proposals, MSAs, pricing sheets · up to 10 MB each</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-10 pt-10 border-t border-slate-100">
-            <button type="button" onClick={() => onSuccess()} className="w-full border border-slate-200 text-slate-600 py-5 rounded-2xl font-bold hover:bg-slate-50 transition-all">Cancel</button>
-            <button disabled={loading} className="w-full bg-[#34833a] text-white py-5 rounded-2xl font-bold shadow-xl shadow-green-900/10 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-              {loading ? <Loader2 className="animate-spin" size={20} /> : 'Save lead'}
-            </button>
-          </div>
-
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </Form>
   );
 };
 

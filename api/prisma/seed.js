@@ -204,6 +204,89 @@ async function main() {
     }
   });
 
+  // Seed Stakeholders for Deal
+  const stakeholdersData = [
+    {
+      dealId: deal.id,
+      contactId: contact.id,
+      role: 'DECISION_MAKER',
+      notes: 'Primary executive sponsor.'
+    }
+  ];
+  for (const sh of stakeholdersData) {
+    const existing = await prisma.dealStakeholder.findFirst({
+      where: { dealId: sh.dealId, contactId: sh.contactId }
+    });
+    if (!existing) {
+      await prisma.dealStakeholder.create({ data: sh });
+    }
+  }
+
+  // Seed Competitors for Deal
+  const competitorsData = [
+    {
+      dealId: deal.id,
+      name: 'Microsoft Solutions',
+      strength: 'Strong enterprise footprint & pricing bundle',
+      weakness: 'Lacks specialized agile implementation capabilities',
+      notes: 'Pushes Dynamics 365 heavily.'
+    },
+    {
+      dealId: deal.id,
+      name: 'Salesforce Cloud Partners',
+      strength: 'Industry standard CRM integration & branding',
+      weakness: 'High custom development costs & steep learning curve',
+      notes: 'Competes on general CRM front.'
+    }
+  ];
+  for (const comp of competitorsData) {
+    const existing = await prisma.dealCompetitor.findFirst({
+      where: { dealId: comp.dealId, name: comp.name }
+    });
+    if (!existing) {
+      await prisma.dealCompetitor.create({ data: comp });
+    }
+  }
+
+  // Seed Documents for Deal
+  const documentsData = [
+    {
+      dealId: deal.id,
+      title: 'NDA_Acme_Executed.pdf',
+      fileName: 'NDA_Acme_Executed.pdf',
+      fileSize: 154200,
+      mimeType: 'application/pdf',
+      storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      uploadedById: 'system'
+    },
+    {
+      dealId: deal.id,
+      title: 'Acme_Digital_Transformation_Proposal_v2.pdf',
+      fileName: 'Acme_Digital_Transformation_Proposal_v2.pdf',
+      fileSize: 2450000,
+      mimeType: 'application/pdf',
+      storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      uploadedById: 'system'
+    },
+    {
+      dealId: deal.id,
+      title: 'Master_Services_Agreement_Draft.docx',
+      fileName: 'Master_Services_Agreement_Draft.docx',
+      fileSize: 45000,
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      uploadedById: 'system'
+    }
+  ];
+  for (const doc of documentsData) {
+    const existing = await prisma.dealDocument.findFirst({
+      where: { dealId: doc.dealId, fileName: doc.fileName }
+    });
+    if (!existing) {
+      await prisma.dealDocument.create({ data: doc });
+    }
+  }
+
   console.log('Sample data created.');
 }
 

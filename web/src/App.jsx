@@ -17,14 +17,18 @@ import Team from './pages/Team';
 // No SystemGuide import needed
 import { ShieldOff } from 'lucide-react';
 
-const Layout = ({ children }) => (
-  <div className="flex bg-slate-50 min-h-screen">
-    <Sidebar />
-    <main className="flex-1 ml-64 overflow-y-auto">
-      {children}
-    </main>
-  </div>
-);
+const Layout = ({ children }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+
+  return (
+    <div className="flex bg-[#F8FAFC] min-h-screen">
+      <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+      <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-60'} overflow-y-auto`}>
+        {children}
+      </main>
+    </div>
+  );
+};
 
 // Redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {

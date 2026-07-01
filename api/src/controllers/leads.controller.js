@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 const { uploadToSupabase } = require('../utils/upload');
 
 // Calculate lead score based on fields and activities
@@ -62,6 +61,9 @@ exports.getLeadById = async (req, res) => {
         },
         convertedDeal: {
           select: { id: true, title: true, stage: true, value: true }
+        },
+        owner: {
+          select: { fullName: true, email: true }
         }
       }
     });
@@ -107,7 +109,8 @@ exports.createLead = async (req, res) => {
       practiceArea,
       estimatedDuration,
       practiceLeader,
-      clientManager
+      clientManager,
+      ownerId
     } = req.body;
 
     // Check for duplicates
@@ -164,10 +167,11 @@ exports.createLead = async (req, res) => {
       hasTimeline: hasTimeline === 'true' || hasTimeline === true
     }, 1);
 
-    // Fetch creator user details to compute ownerInitials
+    // Fetch creator/owner user details to compute ownerInitials
     let ownerInitials = null;
-    if (req.user?.userId) {
-      const userObj = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    const resolvedOwnerId = ownerId || req.user?.userId;
+    if (resolvedOwnerId) {
+      const userObj = await prisma.user.findUnique({ where: { id: resolvedOwnerId } });
       if (userObj && userObj.fullName) {
         ownerInitials = userObj.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       }
@@ -194,7 +198,7 @@ exports.createLead = async (req, res) => {
         hasAuthority: hasAuthority === 'true' || hasAuthority === true,
         hasNeed: hasNeed === 'true' || hasNeed === true,
         hasTimeline: hasTimeline === 'true' || hasTimeline === true,
-        ownerId: req.user?.userId || null,
+        ownerId: ownerId || req.user?.userId || null,
         ownerInitials: ownerInitials || null,
         // Legacy fields
         value: value ? String(value) : null,
@@ -291,6 +295,39 @@ exports.uploadAttachment = async (req, res) => {
 };
 
 // Update lead status with validation
+exports.addActivity = async (req, res) => {
+  const { id } = req.params;
+  const { type, note } = req.body;
+
+  if (!type || !note) {
+    return res.status(400).json({ message: 'Type and note are required' });
+  }
+
+  try {
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+    // Assuming we have a getSafeUserId helper or user in req, fallback to null
+    const userId = req.user?.userId || null;
+
+    const activity = await prisma.leadActivity.create({
+      data: {
+        leadId: id,
+        userId,
+        type,
+        note
+      },
+      include: {
+        user: { select: { fullName: true } }
+      }
+    });
+
+    res.status(201).json(activity);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.updateLeadStatus = async (req, res) => {
   const { id } = req.params;
   const { leadStatus, note } = req.body;

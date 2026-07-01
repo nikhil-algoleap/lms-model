@@ -1,20 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowUp, 
-  ArrowDown, 
+import { motion } from 'framer-motion';
+import Modal from '../components/ui/Modal';
+import LeadForm from '../components/forms/LeadForm';
+import {
+  ArrowUpRight,
+  ArrowDownRight,
   Plus,
-  ExternalLink,
-  ChevronRight,
   Activity,
-  Zap
+  Users,
+  Target,
+  Clock,
+  MoreHorizontal
 } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('lms_user') || '{"fullName": "User", "role": "Team Member"}');
-  
+
   const [stats, setStats] = useState({
     totalLeads: 0,
     pipelineValue: '$0',
@@ -27,268 +42,323 @@ const Dashboard = () => {
   const [leads, setLeads] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, leadsRes, activityRes] = await Promise.allSettled([
+        api.get('/dashboard/stats'),
+        api.get('/leads'),
+        api.get('/dashboard/activity')
+      ]);
 
-        const [statsRes, leadsRes, activityRes] = await Promise.allSettled([
-          api.get('/dashboard/stats'),
-          api.get('/leads'),
-          api.get('/dashboard/activity')
-        ]);
-
-        if (statsRes.status === 'fulfilled') {
-          setStats({
-            totalLeads: statsRes.value.data.totalLeads || 0,
-            pipelineValue: statsRes.value.data.pipelineValue || '$0',
-            leadConversionRate: statsRes.value.data.leadConversionRate || '0%',
-            avgTimeToConvert: statsRes.value.data.avgTimeToConvert || '—',
-            unassignedLeads: statsRes.value.data.unassignedLeads || 0,
-            statusCounts: statsRes.value.data.statusCounts || {}
-          });
-        }
-
-        if (leadsRes.status === 'fulfilled') {
-          setLeads(leadsRes.value.data.slice(0, 5));
-        }
-
-        if (activityRes.status === 'fulfilled') {
-          setActivities(activityRes.value.data);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data);
       }
-    };
-    fetchData();
-  }, []);
 
-  const getActivityIcon = (type) => {
-    switch(type) {
-      case 'WON': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-      case 'CREATED': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-      case 'LOGIN': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>;
-      case 'STATUS_CHANGED': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>;
-      default: return <Activity size={16} className="text-slate-400" />;
+      if (leadsRes.status === 'fulfilled') {
+        setLeads(leadsRes.value.data.slice(0, 5));
+      }
+
+      if (activityRes.status === 'fulfilled') {
+        setActivities(activityRes.value.data);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const getRelativeTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
-    
+
     if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
     return date.toLocaleDateString();
   };
 
+  // Mock data for sparklines & area chart
+  const revenueData = [
+    { name: 'Jan', value: 4000 },
+    { name: 'Feb', value: 3000 },
+    { name: 'Mar', value: 5000 },
+    { name: 'Apr', value: 4500 },
+    { name: 'May', value: 6000 },
+    { name: 'Jun', value: 5500 },
+    { name: 'Jul', value: 7000 }
+  ];
+
+  const STATUS_COLORS = {
+    'NEW': '#3B82F6',
+    'CONTACTED': '#6366F1',
+    'WORKING': '#F59E0B',
+    'NURTURING': '#8B5CF6',
+    'QUALIFIED': '#10B981'
+  };
+
+  const pieData = Object.entries(stats.statusCounts || {}).map(([key, value]) => ({
+    name: key,
+    value: value || 0
+  })).filter(d => d.value > 0);
+
+  // If no data, provide a placeholder
+  if (pieData.length === 0) {
+    pieData.push({ name: 'No Data', value: 1 });
+  }
+
   const kpis = [
-    { label: 'OPEN PIPELINE', value: stats.pipelineValue, trend: `${stats.unassignedLeads} unassigned leads`, color: 'border-emerald-500', isUp: true },
-    { label: 'ACTIVE LEADS', value: stats.totalLeads, trend: 'Currently in pipeline', color: 'border-blue-500', isUp: true },
-    { label: 'CONVERSION RATE', value: stats.leadConversionRate, trend: 'All-time average', color: 'border-purple-500', isUp: true },
-    { label: 'AVG TIME TO CONVERT', value: stats.avgTimeToConvert, trend: 'From creation to conversion', color: 'border-amber-400', isUp: true },
+    { label: 'Pipeline Value', value: stats.pipelineValue, icon: Target, trend: '+12.5%', isUp: true, sparkData: revenueData.slice(0, 7) },
+    { label: 'Active Leads', value: stats.totalLeads, icon: Users, trend: '+5.2%', isUp: true, sparkData: revenueData.slice(2, 9) },
+    { label: 'Conversion Rate', value: stats.leadConversionRate, icon: Activity, trend: '-1.4%', isUp: false, sparkData: revenueData.slice(1, 8) },
+    { label: 'Avg Time to Convert', value: stats.avgTimeToConvert, icon: Clock, trend: '-2 days', isUp: true, sparkData: revenueData.slice(0, 7).reverse() },
   ];
-
-  // Build chart data from real status counts
-  const STATUS_CONFIG = [
-    { key: 'NEW', label: 'NEW', color: 'bg-slate-300' },
-    { key: 'CONTACTED', label: 'CONTACTED', color: 'bg-blue-400' },
-    { key: 'WORKING', label: 'WORKING', color: 'bg-amber-400' },
-    { key: 'NURTURING', label: 'NURTURING', color: 'bg-purple-400' },
-    { key: 'QUALIFIED', label: 'QUALIFIED', color: 'bg-emerald-500' },
-  ];
-
-  const maxCount = Math.max(1, ...STATUS_CONFIG.map(s => stats.statusCounts[s.key] || 0));
-  const chartData = STATUS_CONFIG.map(s => ({
-    ...s,
-    count: stats.statusCounts[s.key] || 0,
-    heightPercent: maxCount > 0 ? Math.max(((stats.statusCounts[s.key] || 0) / maxCount) * 100, 4) : 4
-  }));
-
-  // Role badge color mapping for dashboard
-  const roleBadgeColor = {
-    'Administrator': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    'Practice Leader': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    'Client Manager': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    'Team Member': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
-  };
-
-  // Get greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
-      
-      {/* Header Section */}
-      <div className="bg-[#122b1c] text-white p-10 rounded-[2.5rem] relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-5xl font-serif tracking-tight">
-              {getGreeting()}, {user.fullName?.split(' ')[0] || 'User'} 👋
-            </h1>
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${roleBadgeColor[user.role] || 'bg-slate-500/20 text-slate-300 border-slate-500/30'}`}>
-              {user.role}
-            </span>
-          </div>
-          <p className="text-emerald-200/60 font-medium">
-            Live data from Supabase · {stats.totalLeads} leads in pipeline · {stats.unassignedLeads} unassigned
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="body-text text-[#6B7280] mt-1">
+            Welcome back, {user.fullName?.split(' ')[0] || 'User'}. Here's what's happening today.
           </p>
         </div>
         <button 
-          onClick={() => navigate('/leads')}
-          className="mt-6 md:mt-0 flex items-center gap-2 border border-white/20 px-6 py-3 rounded-xl hover:bg-white/10 transition-all font-bold text-sm tracking-wide"
+          onClick={() => setIsModalOpen(true)}
+          className="btn-primary flex items-center gap-2"
         >
-          <Plus size={18} />
           <span>New Lead</span>
         </button>
       </div>
 
-      {/* KPI Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className={`bg-white p-8 rounded-3xl border-t-8 ${kpi.color} shadow-sm border-x border-b border-slate-100 hover:shadow-md transition-all`}>
-            <p className="text-[10px] font-black text-slate-400 tracking-[0.15em] mb-4">{kpi.label}</p>
-            <h3 className="text-5xl font-serif text-slate-900 mb-4">{loading ? '—' : kpi.value}</h3>
-            <div className={`flex items-center gap-1 text-sm font-bold ${kpi.isUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-              {kpi.isUp ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-              {kpi.trend}
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, idx) => (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            key={kpi.label}
+            className="enterprise-card p-5 flex flex-col justify-between"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-[#F8FAFC] rounded-[8px] border border-[#E5E7EB]">
+                <kpi.icon size={16} className="text-[#6B7280]" />
+              </div>
+              <div className={`flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full ${kpi.isUp ? 'text-[#22C55E] bg-[#22C55E]/10' : 'text-[#EF4444] bg-[#EF4444]/10'}`}>
+                {kpi.isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                {kpi.trend}
+              </div>
             </div>
-          </div>
+            <div>
+              <p className="caption-text mb-1 uppercase tracking-wider">{kpi.label}</p>
+              <h3 className="text-[24px] font-bold text-[#111827] leading-none">
+                {loading ? '—' : kpi.value}
+              </h3>
+            </div>
+
+            {/* Mini Sparkline */}
+            <div className="h-10 mt-4 -mx-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={kpi.sparkData}>
+                  <defs>
+                    <linearGradient id={`colorSpark${idx}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={kpi.isUp ? '#22C55E' : '#EF4444'} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={kpi.isUp ? '#22C55E' : '#EF4444'} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke={kpi.isUp ? '#22C55E' : '#EF4444'}
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill={`url(#colorSpark${idx})`}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* Charts and Details Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column */}
-        <div className="lg:col-span-2 flex flex-col gap-8">
-          
-          {/* Chart Card */}
-          <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm space-y-10">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Leads by Status</h3>
-                <p className="text-sm text-slate-400 font-medium mt-1">Current distribution of active leads</p>
-              </div>
-              <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Live</span>
-            </div>
+      {/* Main Charts & Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div className="flex items-end justify-between h-64 gap-4 px-4">
-               {chartData.map((stage, i) => (
-                 <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                    <span className="text-sm font-bold text-slate-700">{stage.count}</span>
-                    <div 
-                      className={`w-full ${stage.color} rounded-t-lg transition-all duration-700 cursor-pointer group relative`} 
-                      style={{ height: `${stage.heightPercent}%` }}
-                    >
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {stage.label}: {stage.count}
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 tracking-wider">{stage.label}</span>
-                 </div>
-               ))}
+        {/* Revenue Area Chart */}
+        <div className="lg:col-span-2 enterprise-card p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="card-title">Revenue Forecast</h3>
+            <button className="p-1 text-[#6B7280] hover:bg-[#F8FAFC] rounded-md transition-colors">
+              <MoreHorizontal size={16} />
+            </button>
+          </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#166534" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#166534" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(val) => `$${val / 1000}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: '#111827', fontSize: '14px', fontWeight: 600 }}
+                  labelStyle={{ color: '#6B7280', fontSize: '12px' }}
+                />
+                <Area type="monotone" dataKey="value" stroke="#166534" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Lead Status Donut Chart */}
+        <div className="enterprise-card p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="card-title">Leads by Status</h3>
+          </div>
+          <div className="flex-1 min-h-[280px] relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={90}
+                  paddingAngle={2}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#CBD5E1'} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '8px 12px' }}
+                  itemStyle={{ color: '#111827', fontSize: '14px', fontWeight: 600 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center Metric */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[28px] font-bold text-[#111827] leading-none">{stats.totalLeads}</span>
+              <span className="text-[12px] font-medium text-[#6B7280] mt-1">Total</span>
             </div>
           </div>
 
-          {/* Recent Activity Card */}
-          <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm flex-1">
-            <div className="mb-10">
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Recent Activity</h3>
-              <p className="text-sm text-slate-500 font-medium mt-1">Real-time updates from across the platform</p>
-            </div>
+          {/* Custom Legend */}
+          <div className="grid grid-cols-2 gap-y-2 gap-x-4 mt-2">
+            {pieData.map((entry) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[entry.name] || '#CBD5E1' }}></div>
+                <span className="text-[12px] font-medium text-[#6B7280] truncate">{entry.name}</span>
+                <span className="text-[12px] font-bold text-[#111827] ml-auto">{entry.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-            <div className="relative pl-6 space-y-10 border-l border-slate-100 ml-4">
+        {/* Recent Leads Table */}
+        <div className="lg:col-span-2 enterprise-card overflow-hidden">
+          <div className="px-6 py-5 border-b border-[#E5E7EB] flex justify-between items-center bg-white">
+            <h3 className="card-title">Recent Leads</h3>
+            <button onClick={() => navigate('/leads')} className="text-[13px] font-medium text-[#166534] hover:text-[#14532D]">View all</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
+                  <th className="px-6 py-3 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Lead</th>
+                  <th className="px-6 py-3 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Score</th>
+                  <th className="px-6 py-3 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {leads.length > 0 ? leads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-[#F8FAFC]/50 transition-colors cursor-pointer group" onClick={() => navigate(`/leads/${lead.id}`)}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#F1F5F9] text-[#475569] rounded-full flex items-center justify-center text-[12px] font-semibold border border-[#E2E8F0]">
+                          {(lead.company || lead.account?.name || lead.title || 'L').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-[14px] font-medium text-[#111827] group-hover:text-[#166534] transition-colors">
+                            {`${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.title}
+                          </p>
+                          <p className="text-[12px] text-[#6B7280]">{lead.account?.name || lead.company || 'Unknown Account'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
+                        {lead.leadStatus || 'NEW'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[13px] font-medium text-[#111827]">{lead.leadScore || 0}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[13px] text-[#6B7280]">{getRelativeTime(lead.createdAt)}</span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-8 text-center text-[13px] text-[#6B7280]">No recent leads found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Activity Timeline */}
+        <div className="enterprise-card flex flex-col">
+          <div className="px-6 py-5 border-b border-[#E5E7EB] bg-white">
+            <h3 className="card-title">Activity</h3>
+          </div>
+          <div className="flex-1 p-6 overflow-y-auto max-h-[350px]">
+            <div className="relative border-l border-[#E5E7EB] ml-3 space-y-6 pb-2">
               {activities.length > 0 ? activities.map((activity, idx) => (
-                <div key={activity.id || idx} className="relative">
-                  <div className={`absolute -left-[45px] top-0 w-10 h-10 rounded-full ${activity.type === 'LOGIN' ? 'bg-blue-50' : activity.type === 'STATUS_CHANGED' ? 'bg-amber-50' : 'bg-emerald-50'} flex items-center justify-center border-4 border-white shadow-sm`}>
-                    {getActivityIcon(activity.type)}
-                  </div>
+                <div key={activity.id || idx} className="relative pl-6">
+                  <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-[#166534] ring-4 ring-white"></div>
                   <div>
-                    <p className="text-slate-800 text-base">
-                      <span className="font-bold text-slate-900">{activity.user?.fullName === user.fullName ? 'You' : activity.user?.fullName || 'System'}</span> 
+                    <p className="text-[13px] text-[#111827]">
+                      <span className="font-semibold">{activity.user?.fullName === user.fullName ? 'You' : activity.user?.fullName || 'System'}</span>
                       {activity.type === 'LOGIN' ? ' logged in' : ` ${activity.note || ''}`}
-                      {activity.displayTitle && activity.type !== 'LOGIN' && <span className="font-bold text-slate-900 ml-1">{activity.displayTitle}</span>}
+                      {activity.displayTitle && activity.type !== 'LOGIN' && <span className="font-semibold ml-1">{activity.displayTitle}</span>}
                     </p>
-                    <p className="text-sm text-slate-500 mt-1.5 font-medium">{getRelativeTime(activity.createdAt)}</p>
+                    <p className="text-[11px] text-[#6B7280] mt-1 font-medium">{getRelativeTime(activity.createdAt)}</p>
                   </div>
                 </div>
               )) : (
-                <div className="py-10 text-center text-slate-400 font-medium">
-                  No recent activity recorded yet.
-                </div>
+                <div className="text-[13px] text-[#6B7280] pl-4">No recent activity.</div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right: My Leads */}
-        <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm flex flex-col">
-          <div className="flex justify-between items-center mb-10">
-             <div>
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Recent Leads</h3>
-                <p className="text-sm text-slate-400 font-medium mt-1">Latest leads in the system</p>
-             </div>
-             <button 
-               onClick={() => navigate('/leads')}
-               className="text-xs font-bold text-slate-500 hover:text-slate-900 border border-slate-200 px-4 py-2 rounded-xl transition-all flex items-center gap-2 group"
-             >
-                View all <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-             </button>
-          </div>
-
-          <div className="space-y-4 flex-1">
-            {leads.length > 0 ? leads.map((lead) => (
-              <div 
-                key={lead.id} 
-                onClick={() => navigate(`/leads/${lead.id}`)}
-                className="p-5 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100 group cursor-pointer space-y-3"
-              >
-                <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-slate-900 leading-snug pr-4">
-                        {lead.account?.name || lead.company || 'No Account'} · {lead.title}
-                    </h4>
-                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase ${
-                      lead.leadStatus === 'QUALIFIED' ? 'bg-emerald-50 text-emerald-500' :
-                      lead.leadStatus === 'WORKING' ? 'bg-amber-50 text-amber-500' :
-                      lead.leadStatus === 'CONTACTED' ? 'bg-blue-50 text-blue-500' :
-                      lead.leadStatus === 'NURTURING' ? 'bg-purple-50 text-purple-500' :
-                      'bg-violet-50 text-violet-500'
-                    }`}>
-                        {lead.leadStatus || 'NEW'}
-                    </span>
-                </div>
-                <div className="flex justify-between items-end">
-                    <div className="flex gap-2">
-                        {lead.leadRating === 'HOT' && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded">🔥 HOT</span>}
-                        {lead.leadRating === 'WARM' && <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded">☀️ WARM</span>}
-                        {lead.leadRating === 'COLD' && <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">❄️ COLD</span>}
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">Score: {lead.leadScore || 0}</span>
-                    </div>
-                    <ExternalLink size={14} className="text-slate-200 group-hover:text-slate-400" />
-                </div>
-              </div>
-            )) : (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-300">
-                 <Activity size={40} className="mb-4 opacity-20" />
-                 <p className="font-bold">{loading ? 'Loading...' : 'No leads found'}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
       </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} hideHeader={true}>
+        <LeadForm onSuccess={() => { setIsModalOpen(false); fetchData(); }} onCancel={() => setIsModalOpen(false)} />
+      </Modal>
     </div>
   );
 };

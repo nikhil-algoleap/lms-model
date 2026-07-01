@@ -2,7 +2,7 @@ const { z } = require('zod');
 
 const leadSchema = z.object({
   title: z.string().optional(),
-  accountName: z.string({ required_error: "Account is required" }).min(1, "Account is required"),
+  accountName: z.string().optional().nullable(),
   company: z.string({ required_error: "Company is required" }).min(1, "Company is required"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),

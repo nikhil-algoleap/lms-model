@@ -1,20 +1,60 @@
-import React from 'react';
-import { twMerge } from 'tailwind-merge';
+import * as React from "react"
+import { cn } from "../../lib/utils"
 
-export function Card({ children, className, hover = true }) {
-  return (
-    <div
-      className={twMerge(
-        'bg-white border border-slate-200 rounded-lg shadow-sm relative overflow-hidden transition-all duration-200',
-        hover && 'hover:shadow-md hover:border-slate-300',
-        className
-      )}
-    >
-      <div className="relative">
-        {children}
-      </div>
-    </div>
-  );
-}
+const Card = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-[10px] border border-[#E5E7EB] bg-white text-slate-950 shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+      className
+    )}
+    {...props}
+  />
+))
+Card.displayName = "Card"
 
-export default Card;
+const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-[18px] font-semibold leading-none tracking-tight text-[#111827]",
+      className
+    )}
+    {...props}
+  />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-[14px] text-[#6B7280]", className)}
+    {...props}
+  />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+))
+CardFooter.displayName = "CardFooter"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }

@@ -1,6 +1,5 @@
 const xlsx = require('xlsx');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 exports.bulkImportLeads = async (req, res) => {
   try {

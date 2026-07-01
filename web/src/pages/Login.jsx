@@ -43,10 +43,10 @@ const Login = () => {
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-[#358b49] rounded-2xl flex items-center justify-center shadow-xl shadow-green-200 mb-4">
-             <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-white" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 4 15 12 5 20 5 4" />
-                <line x1="19" y1="5" x2="19" y2="19" />
-             </svg>
+            <svg viewBox="0 0 24 24" className="w-7 h-7 text-white fill-white" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4" />
+              <line x1="19" y1="5" x2="19" y2="19" />
+            </svg>
           </div>
           <h1 className="text-4xl font-extrabold text-[#358b49] tracking-tight">algoleap</h1>
           <p className="text-slate-500 font-medium">Lead Management System v2.0</p>
@@ -63,8 +63,8 @@ const Login = () => {
               <label className="block text-sm font-semibold text-slate-700 mb-2">Work Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400 font-medium"
@@ -78,8 +78,8 @@ const Login = () => {
               <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400 font-medium"
@@ -96,8 +96,8 @@ const Login = () => {
               </div>
             )}
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-[#358b49] hover:bg-[#2a7039] disabled:bg-slate-400 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-100 mt-2"
             >

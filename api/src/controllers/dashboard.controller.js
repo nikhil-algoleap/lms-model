@@ -1,76 +1,62 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 exports.getStats = async (req, res) => {
   try {
-    // Total active leads (not converted)
-    const totalLeads = await prisma.lead.count({
-      where: { leadStatus: { not: 'CONVERTED' } }
-    });
+    // Run independent database queries in parallel for maximum speed
+    const [
+      totalLeads,
+      convertedLeadsCount,
+      allLeadsCount,
+      allLeads,
+      statusBreakdown
+    ] = await Promise.all([
+      prisma.lead.count({ where: { leadStatus: { not: 'CONVERTED' } } }),
+      prisma.lead.count({ where: { leadStatus: 'CONVERTED' } }),
+      prisma.lead.count(),
+      prisma.lead.findMany({ where: { leadStatus: { not: 'CONVERTED' } }, select: { value: true, createdAt: true } }),
+      prisma.lead.groupBy({ by: ['leadStatus'], _count: { id: true }, where: { leadStatus: { not: 'CONVERTED' } } })
+    ]);
 
-    // Converted leads count
-    const convertedLeadsCount = await prisma.lead.count({
-      where: { leadStatus: 'CONVERTED' }
-    });
-
-    // Unassigned leads (no owner)
+    // Calculate unassigned leads safely
     let unassignedLeads = 0;
     try {
       unassignedLeads = await prisma.lead.count({
-        where: {
-          ownerId: null,
-          leadStatus: { not: 'CONVERTED' }
-        }
+        where: { ownerId: null, leadStatus: { not: 'CONVERTED' } }
       });
     } catch (e) {
-      // owner_id column may not exist yet
       unassignedLeads = 0;
     }
 
-    // Pipeline value from all active leads
-    const allLeads = await prisma.lead.findMany({
-      where: { leadStatus: { not: 'CONVERTED' } },
-      select: { value: true, createdAt: true }
-    });
-
+    // Pipeline value
     const totalPipeline = allLeads.reduce((sum, lead) => {
       const val = parseFloat(lead.value?.replace(/[^0-9.]/g, '') || 0);
       return sum + val;
     }, 0);
 
     // Conversion rate
-    const allLeadsCount = await prisma.lead.count();
-    const conversionRate = allLeadsCount > 0
-      ? Math.round((convertedLeadsCount / allLeadsCount) * 100)
-      : 0;
+    const conversionRate = allLeadsCount > 0 ? Math.round((convertedLeadsCount / allLeadsCount) * 100) : 0;
 
-    // Average time to convert (for converted leads)
+    // Average time to convert
     let convertedLeads = [];
     try {
       convertedLeads = await prisma.lead.findMany({
-        where: {
-          leadStatus: 'CONVERTED',
-          createdAt: { not: null }
-        },
+        where: { leadStatus: 'CONVERTED', createdAt: { not: null } },
         select: { createdAt: true, convertedDate: true }
       });
-    } catch (e) {
-      // convertedDate column may not exist yet
-      convertedLeads = [];
-    }
+    } catch (e) {}
 
-    let avgTimeToConvert = '0d';
+    let avgTimeToConvert = 'N/A';
     if (convertedLeads.length > 0) {
       const leadsWithDates = convertedLeads.filter(l => l.convertedDate);
-      const totalDays = leadsWithDates.reduce((sum, lead) => {
-        const created = new Date(lead.createdAt);
-        const converted = new Date(lead.convertedDate);
-        const diffDays = Math.floor((converted - created) / (1000 * 60 * 60 * 24));
-        return sum + Math.max(diffDays, 0);
-      }, 0);
-      avgTimeToConvert = leadsWithDates.length > 0 ? `${Math.round(totalDays / leadsWithDates.length)}d` : 'N/A';
-    } else {
-      avgTimeToConvert = 'N/A';
+      if (leadsWithDates.length > 0) {
+        const totalDays = leadsWithDates.reduce((sum, lead) => {
+          const created = new Date(lead.createdAt);
+          const converted = new Date(lead.convertedDate);
+          const diffDays = Math.floor((converted - created) / (1000 * 60 * 60 * 24));
+          return sum + Math.max(diffDays, 0);
+        }, 0);
+        avgTimeToConvert = `${Math.round(totalDays / leadsWithDates.length)}d`;
+      }
     }
 
     // Format pipeline value
@@ -83,13 +69,7 @@ exports.getStats = async (req, res) => {
       pipelineValue = `$${totalPipeline.toFixed(0)}`;
     }
 
-    // Lead status breakdown for the chart
-    const statusBreakdown = await prisma.lead.groupBy({
-      by: ['leadStatus'],
-      _count: { id: true },
-      where: { leadStatus: { not: 'CONVERTED' } }
-    });
-
+    // Lead status breakdown
     const statusCounts = {};
     statusBreakdown.forEach(item => {
       statusCounts[item.leadStatus] = item._count.id;

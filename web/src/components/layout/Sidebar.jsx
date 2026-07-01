@@ -8,19 +8,17 @@ import {
   LogOut,
   UserPlus,
   KeyRound,
-  Columns,
   TrendingUp,
   GitBranch,
-  BookOpen
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('lms_user') || '{"fullName": "User", "role": "Team Member"}');
   const isAdmin = user.role === 'Administrator';
-
-
 
   const handleLogout = () => {
     localStorage.clear();
@@ -36,75 +34,103 @@ const Sidebar = () => {
     { name: 'Forecast', icon: TrendingUp, path: '/forecast' },
   ];
 
-  // Role badge color mapping
-  const roleBadgeColor = {
-    'Administrator': 'bg-emerald-50 text-emerald-700',
-    'Practice Leader': 'bg-purple-50 text-purple-700',
-    'Client Manager': 'bg-blue-50 text-blue-700',
-    'Team Member': 'bg-slate-100 text-slate-500',
-  };
-
   return (
-    <aside className="w-64 bg-[#0d2618] h-screen flex flex-col flex-shrink-0 fixed top-0 left-0 z-50">
+    <aside className={`${isCollapsed ? 'w-20' : 'w-60'} bg-[#0F172A] border-r border-[#1E293B] h-screen flex flex-col flex-shrink-0 fixed top-0 left-0 z-50 transition-all duration-300`}>
+      {/* Collapse Toggle */}
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)} 
+        className="absolute -right-3 top-6 bg-[#1E293B] border border-[#334155] rounded-full p-1 text-white hover:bg-[#334155] z-50 transition-colors"
+      >
+        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
       {/* Brand Header */}
-      <div className="px-6 py-5 flex items-center gap-3">
-        <div className="w-8 h-8 bg-[#378b47] rounded-md flex items-center justify-center">
+      <div className={`px-5 py-6 flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
+        <div className="w-8 h-8 bg-[#166534] rounded-[8px] flex items-center justify-center shadow-sm flex-shrink-0">
           <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-white" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="5 4 15 12 5 20 5 4" />
             <line x1="19" y1="5" x2="19" y2="19" />
           </svg>
         </div>
-        <div>
-          <h2 className="text-lg font-serif font-bold text-white tracking-tight leading-none">algoleap</h2>
-          <p className="text-[10px] font-semibold text-[#8da396] uppercase tracking-wider mt-0.5">LMS V1.0</p>
-        </div>
+        {!isCollapsed && (
+          <div className="flex flex-col overflow-hidden">
+            <h2 className="text-[16px] font-bold text-white tracking-tight leading-none truncate">Algoleap</h2>
+            <p className="text-[10px] font-medium text-[#94A3B8] uppercase tracking-wider mt-1 truncate">CRM Platform</p>
+          </div>
+        )}
       </div>
 
-      {/* Navigation — scrollable to prevent overflow */}
-      <nav className="flex-1 px-4 py-2">
-        <p className="text-[10px] font-semibold text-[#6a8274] uppercase tracking-widest px-3 mb-2 mt-2">Workspace</p>
-        <div className="space-y-1">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-2 overflow-y-auto overflow-x-hidden">
+        {!isCollapsed ? (
+          <p className="text-[11px] font-semibold text-[#64748B] uppercase tracking-widest px-3 mb-3 mt-2">Workspace</p>
+        ) : (
+          <div className="h-6 mb-3 mt-2"></div>
+        )}
+        <div className="space-y-0.5">
           {menuItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}
+              title={isCollapsed ? item.name : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm ${isActive
-                  ? 'bg-[#378b47] text-white'
-                  : 'text-[#cbd9d0] hover:bg-white/5 hover:text-white'
-                }`
+                `flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors duration-150 text-[14px] font-medium ${
+                  isActive
+                    ? 'bg-[#166534]/20 text-[#22C55E]'
+                    : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-[#F8FAFC]'
+                } ${isCollapsed ? 'justify-center' : ''}`
               }
             >
-              <item.icon size={18} className="opacity-80" />
-              <span>{item.name}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={16} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
+                  {!isCollapsed && <span>{item.name}</span>}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
 
-        {/* Administration Section — Only visible to Administrators */}
+        {/* Administration Section */}
         {isAdmin && (
-          <div className="mt-6">
-            <p className="text-[10px] font-semibold text-[#6a8274] uppercase tracking-widest px-3 mb-2">Administration</p>
-            <div className="space-y-1">
+          <div className="mt-8">
+            {!isCollapsed ? (
+              <p className="text-[11px] font-semibold text-[#64748B] uppercase tracking-widest px-3 mb-3">Administration</p>
+            ) : (
+              <div className="h-4 mb-3 border-t border-[#1E293B] mx-2"></div>
+            )}
+            <div className="space-y-0.5">
               <NavLink
                 to="/users-roles"
+                title={isCollapsed ? 'Users & Roles' : undefined}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm ${isActive ? 'bg-[#378b47] text-white' : 'text-[#cbd9d0] hover:bg-white/5 hover:text-white'
-                  }`
+                  `flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors duration-150 text-[14px] font-medium ${
+                    isActive ? 'bg-[#166534]/20 text-[#22C55E]' : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-[#F8FAFC]'
+                  } ${isCollapsed ? 'justify-center' : ''}`
                 }
               >
-                <UserPlus size={18} className="opacity-80" />
-                <span>Users & Roles</span>
+                {({ isActive }) => (
+                  <>
+                    <UserPlus size={16} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
+                    {!isCollapsed && <span>Users & Roles</span>}
+                  </>
+                )}
               </NavLink>
               <NavLink
                 to="/permissions"
+                title={isCollapsed ? 'Permissions' : undefined}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm ${isActive ? 'bg-[#378b47] text-white' : 'text-[#cbd9d0] hover:bg-white/5 hover:text-white'
-                  }`
+                  `flex items-center gap-3 px-3 py-2 rounded-[8px] transition-colors duration-150 text-[14px] font-medium ${
+                    isActive ? 'bg-[#166534]/20 text-[#22C55E]' : 'text-[#94A3B8] hover:bg-[#1E293B] hover:text-[#F8FAFC]'
+                  } ${isCollapsed ? 'justify-center' : ''}`
                 }
               >
-                <KeyRound size={18} className="opacity-80" />
-                <span>Permissions</span>
+                {({ isActive }) => (
+                  <>
+                    <KeyRound size={16} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
+                    {!isCollapsed && <span>Permissions</span>}
+                  </>
+                )}
               </NavLink>
             </div>
           </div>
@@ -112,18 +138,22 @@ const Sidebar = () => {
       </nav>
 
       {/* User Profile Footer */}
-      <div className="px-4 py-4 border-t border-white/5">
-        <div className="flex items-center gap-3 cursor-pointer">
-          <div className="w-9 h-9 bg-[#378b47] rounded-full flex items-center justify-center text-white font-bold text-sm">
-            {user.fullName?.charAt(0)}
+      <div className={`px-4 py-4 border-t border-[#1E293B] ${isCollapsed ? 'flex justify-center px-2' : ''}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} cursor-pointer group w-full`}>
+          <div className="w-8 h-8 bg-[#1E293B] group-hover:bg-[#334155] transition-colors rounded-full flex items-center justify-center text-white font-semibold text-sm border border-[#334155] flex-shrink-0">
+            {user.fullName?.charAt(0) || 'U'}
           </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-semibold text-white truncate">{user.fullName}</p>
-            <p className="text-[11px] text-[#8da396]">{user.role}</p>
-          </div>
-          <button onClick={handleLogout} className="p-1.5 text-[#6a8274] hover:text-red-400 transition-colors" title="Sign out">
-            <LogOut size={16} />
-          </button>
+          {!isCollapsed && (
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[13px] font-medium text-white truncate">{user.fullName}</p>
+              <p className="text-[11px] text-[#94A3B8] truncate">{user.role}</p>
+            </div>
+          )}
+          {!isCollapsed && (
+            <button onClick={handleLogout} className="p-1.5 text-[#64748B] hover:text-[#EF4444] transition-colors rounded-md hover:bg-[#1E293B]" title="Sign out">
+              <LogOut size={14} strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
     </aside>

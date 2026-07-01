@@ -1,23 +1,36 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 const { uploadToSupabase } = require('../utils/upload');
+
+const getSafeUserId = async (userId) => {
+  if (!userId) return null;
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    return user ? userId : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 
 // Unified Pipeline: Get all Leads and Deals
 exports.getUnifiedPipeline = async (req, res) => {
   try {
-    const leads = await prisma.lead.findMany({
-      where: { NOT: { leadStatus: 'CONVERTED' } },
-      include: { account: { select: { name: true } } }
-    });
-
-    const deals = await prisma.deal.findMany({
-      include: { account: { select: { name: true } } }
-    });
+    const [leads, deals] = await Promise.all([
+      prisma.lead.findMany({
+        where: { NOT: { leadStatus: 'CONVERTED' } },
+        include: { account: { select: { name: true } } }
+      }),
+      prisma.deal.findMany({
+        include: { account: { select: { name: true } } }
+      })
+    ]);
 
     const unified = [
       ...leads.map(l => ({
         id: l.id,
         title: l.title,
+        firstName: l.firstName,
+        lastName: l.lastName,
         accountId: l.accountId,
         accountName: l.account?.name,
         stage: l.leadStatus,
@@ -52,7 +65,7 @@ exports.getUnifiedPipeline = async (req, res) => {
 exports.convertLead = async (req, res) => {
   const { id } = req.params;
   const { 
-    accountMode, accountId, accountName,
+    accountMode, accountId, existingAccountId, accountName,
     contactFirstName, contactLastName, contactEmail, contactPhone,
     title, value, probability, expectedCloseDate, ownerId,
     createDeal = true
@@ -72,9 +85,9 @@ exports.convertLead = async (req, res) => {
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create or Link Account
-      let finalAccountId = lead.accountId || accountId;
-      if (!finalAccountId && accountMode === 'new' && (accountName || lead.company)) {
-        const targetName = accountName || lead.company || `${lead.lastName || 'Unknown'} Account`;
+      let finalAccountId = lead.accountId || accountId || existingAccountId;
+      if (!finalAccountId && accountMode === 'new' && (accountName || lead.company || lead.lastName || lead.firstName)) {
+        const targetName = accountName || lead.company || `${lead.lastName || lead.firstName || 'Unknown'} Account`;
         const existingAccount = await tx.account.findFirst({
           where: { name: targetName }
         });
@@ -85,6 +98,10 @@ exports.convertLead = async (req, res) => {
             data: {
               name: targetName,
               ownerInitials: lead.ownerInitials,
+              industry: lead.industry || null,
+              description: lead.description || null,
+              contactEmail: lead.email || null,
+              contactPhone: lead.phone || null
             }
           });
           finalAccountId = newAccount.id;
@@ -92,41 +109,32 @@ exports.convertLead = async (req, res) => {
       }
 
       // 2. Create or Link Contact
-      let finalContactId = lead.contactId;
+      let finalContactId = lead.contactId || null;
       if (!finalContactId) {
-        const emailToUse = contactEmail || lead.email;
-        let existingContact = null;
-        if (emailToUse) {
-          existingContact = await tx.contact.findUnique({
-            where: { email: emailToUse }
-          });
-        }
-        if (existingContact) {
-          finalContactId = existingContact.id;
-        } else {
+        const contactFullName = `${contactFirstName || lead.firstName || ''} ${contactLastName || lead.lastName || ''}`.trim();
+        if (contactFullName) {
           const newContact = await tx.contact.create({
             data: {
-              fullName: `${contactFirstName || lead.firstName || ''} ${contactLastName || lead.lastName || ''}`.trim() || 'Unknown Contact',
-              email: emailToUse || null,
-              phone: contactPhone || lead.phone,
-              title: lead.jobTitle,
-              accountId: finalAccountId,
-              ownerInitials: lead.ownerInitials,
+              fullName: contactFullName,
+              email: contactEmail || lead.email || null,
+              phone: contactPhone || lead.phone || null,
+              title: title || lead.jobTitle || lead.title || null,
+              accountId: finalAccountId
             }
           });
           finalContactId = newContact.id;
         }
       }
 
-      // 3. Create Deal (Optional but default true)
+      // 3. Create Deal if requested
       let deal = null;
       if (createDeal) {
-        // Safe value parsing to avoid NaN errors
         let parsedValue = 0;
-        if (value !== undefined && value !== null) {
-          parsedValue = parseFloat(value);
+        if (value) {
+          const cleanVal = String(value).replace(/[^0-9.]/g, '');
+          parsedValue = cleanVal ? parseFloat(cleanVal) : 0;
         } else if (lead.value) {
-          const cleanVal = lead.value.replace(/[^0-9.]/g, '');
+          const cleanVal = String(lead.value).replace(/[^0-9.]/g, '');
           parsedValue = cleanVal ? parseFloat(cleanVal) : 0;
         }
         if (isNaN(parsedValue)) parsedValue = 0;
@@ -140,7 +148,7 @@ exports.convertLead = async (req, res) => {
           deal = existingDeal;
         } else {
           // Generate a unique title to avoid unique constraint violation on deal title
-          const baseTitle = title || `${lead.company || lead.lastName || 'New'} Deal`;
+          const baseTitle = title || `${lead.company || lead.lastName || lead.firstName || 'New'} Deal`;
           let dealTitle = baseTitle;
           let titleUnique = false;
           let suffixCount = 0;
@@ -170,13 +178,22 @@ exports.convertLead = async (req, res) => {
             }
           });
 
-          // Link contact as stakeholder
-          if (finalContactId) {
-            await tx.dealStakeholder.create({
+
+          // Auto-create boilerplate document templates in Deal Room
+          const defaultDocs = [
+            { title: 'Standard_NDA_Template.pdf', fileName: 'Standard_NDA_Template.pdf', fileSize: 185000, mimeType: 'application/pdf', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+            { title: 'Statement_of_Work_Draft.docx', fileName: 'Statement_of_Work_Draft.docx', fileSize: 92000, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+          ];
+          for (const d of defaultDocs) {
+            await tx.dealDocument.create({
               data: {
                 dealId: deal.id,
-                contactId: finalContactId,
-                role: 'DECISION_MAKER'
+                title: d.title,
+                fileName: d.fileName,
+                fileSize: d.fileSize,
+                mimeType: d.mimeType,
+                storageUrl: d.storageUrl,
+                uploadedById: req.user?.userId || 'system'
               }
             });
           }
@@ -219,6 +236,9 @@ exports.convertLead = async (req, res) => {
       });
 
       return { deal, accountId: finalAccountId, contactId: finalContactId };
+    }, {
+      maxWait: 10000,
+      timeout: 30000
     });
 
     res.status(201).json(result);
@@ -327,9 +347,7 @@ exports.getDealById = async (req, res) => {
           }
         },
         activities: { include: { user: { select: { fullName: true } } }, orderBy: { createdAt: 'desc' } },
-        documents: true,
-        stakeholders: { include: { contact: true } },
-        competitors: true
+        documents: true
       }
     });
     if (!deal) return res.status(404).json({ message: 'Deal not found' });
@@ -522,8 +540,204 @@ exports.createDeal = async (req, res) => {
       }
     });
 
+
+    // Auto-create boilerplate document templates in Deal Room
+    const defaultDocs = [
+      { title: 'Standard_NDA_Template.pdf', fileName: 'Standard_NDA_Template.pdf', fileSize: 185000, mimeType: 'application/pdf', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+      { title: 'Statement_of_Work_Draft.docx', fileName: 'Statement_of_Work_Draft.docx', fileSize: 92000, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+    ];
+    for (const d of defaultDocs) {
+      await prisma.dealDocument.create({
+        data: {
+          dealId: deal.id,
+          title: d.title,
+          fileName: d.fileName,
+          fileSize: d.fileSize,
+          mimeType: d.mimeType,
+          storageUrl: d.storageUrl,
+          uploadedById: req.user?.userId || 'system'
+        }
+      });
+    }
+
     res.status(201).json(deal);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.addActivity = async (req, res) => {
+  const { id } = req.params;
+  const { type, note } = req.body;
+
+  if (!type || !note) {
+    return res.status(400).json({ message: 'Type and note are required' });
+  }
+
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+
+    const safeUserId = await getSafeUserId(req.user?.userId);
+
+    const activity = await prisma.dealActivity.create({
+      data: {
+        dealId: id,
+        userId: safeUserId,
+        type,
+        note
+      },
+      include: {
+        user: { select: { fullName: true } }
+      }
+    });
+
+    res.status(201).json(activity);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.initializeTemplates = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+
+    const defaultDocs = [
+      { title: 'Standard_NDA_Template.pdf', fileName: 'Standard_NDA_Template.pdf', fileSize: 185000, mimeType: 'application/pdf', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+      { title: 'Statement_of_Work_Draft.docx', fileName: 'Statement_of_Work_Draft.docx', fileSize: 92000, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', storageUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+    ];
+
+    const createdDocs = [];
+    for (const d of defaultDocs) {
+      const existing = await prisma.dealDocument.findFirst({
+        where: { dealId: id, fileName: d.fileName }
+      });
+      if (!existing) {
+        const created = await prisma.dealDocument.create({
+          data: {
+            dealId: id,
+            title: d.title,
+            fileName: d.fileName,
+            fileSize: d.fileSize,
+            mimeType: d.mimeType,
+            storageUrl: d.storageUrl,
+            uploadedById: req.user?.userId || 'system'
+          }
+        });
+        createdDocs.push(created);
+      }
+    }
+
+    const safeUserId = await getSafeUserId(req.user?.userId);
+    await prisma.dealActivity.create({
+      data: {
+        dealId: id,
+        userId: safeUserId,
+        type: 'NOTE',
+        note: `Initialized Deal Room with boilerplate templates.`
+      }
+    });
+
+    res.json({ message: 'Boilerplate templates initialized', documents: createdDocs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.suggestCompetitors = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+
+    const defaultComps = [
+      { name: 'Accenture', strength: 'Global scale and consulting depth', weakness: 'Expensive resource pricing', notes: 'Typical enterprise competitor' },
+      { name: 'Salesforce Solutions', strength: 'Dominant market share', weakness: 'High licensing & lock-in', notes: 'Platform software competitor' }
+    ];
+
+    const createdComps = [];
+    for (const c of defaultComps) {
+      const existing = await prisma.dealCompetitor.findFirst({
+        where: { dealId: id, name: c.name }
+      });
+      if (!existing) {
+        const created = await prisma.dealCompetitor.create({
+          data: {
+            dealId: id,
+            name: c.name,
+            strength: c.strength,
+            weakness: c.weakness,
+            notes: c.notes
+          }
+        });
+        createdComps.push(created);
+      }
+    }
+
+    const safeUserId = await getSafeUserId(req.user?.userId);
+    await prisma.dealActivity.create({
+      data: {
+        dealId: id,
+        userId: safeUserId,
+        type: 'NOTE',
+        note: `Added industry standard competitors to comparison.`
+      }
+    });
+
+    res.json({ message: 'Default competitors added', competitors: createdComps });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.suggestStakeholders = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id }, include: { account: true } });
+    if (!deal) return res.status(404).json({ message: 'Deal not found' });
+    if (!deal.accountId) return res.status(400).json({ message: 'No account linked to this deal' });
+
+    const accountContacts = await prisma.contact.findMany({
+      where: { accountId: deal.accountId }
+    });
+
+    const createdStakeholders = [];
+    for (const c of accountContacts) {
+      const existing = await prisma.dealStakeholder.findFirst({
+        where: { dealId: id, contactId: c.id }
+      });
+      if (!existing) {
+        const created = await prisma.dealStakeholder.create({
+          data: {
+            dealId: id,
+            contactId: c.id,
+            role: 'INFLUENCER',
+            notes: 'Auto-suggested from Account Contacts'
+          },
+          include: { contact: true }
+        });
+        createdStakeholders.push(created);
+      }
+    }
+
+    if (createdStakeholders.length > 0) {
+      const safeUserId = await getSafeUserId(req.user?.userId);
+      await prisma.dealActivity.create({
+        data: {
+          dealId: id,
+          userId: safeUserId,
+          type: 'NOTE',
+          note: `Mapped ${createdStakeholders.length} contacts from linked Account as stakeholders.`
+        }
+      });
+    }
+
+    res.json({ message: `Successfully mapped ${createdStakeholders.length} stakeholders`, stakeholders: createdStakeholders });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+

@@ -3,13 +3,13 @@ import api from '../api/client';
 import { 
   KeyRound, 
   ShieldCheck, 
-  ShieldAlert, 
-  CheckCircle2, 
+  ShieldAlert,
   Lock,
   ChevronRight,
   Zap,
   Save,
-  RefreshCcw
+  RefreshCcw,
+  Check
 } from 'lucide-react';
 
 const Permissions = () => {
@@ -69,8 +69,6 @@ const Permissions = () => {
       setRoles(rolesRes.data);
       const updatedRole = rolesRes.data.find(r => r.id === selectedRole.id);
       setSelectedRole(updatedRole);
-      
-      // Show success (could add a toast)
     } catch (err) {
       console.error('Error saving permissions:', err);
     } finally {
@@ -87,113 +85,114 @@ const Permissions = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#166534]"></div>
     </div>
   );
 
   return (
-    <div className="p-8 lg:p-12 space-y-12 max-w-[1600px] mx-auto animate-in fade-in duration-700">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
-                 <KeyRound size={18} />
-              </div>
-              <h1 className="text-4xl font-serif text-slate-900 tracking-tight">Permission Matrix</h1>
-           </div>
-           <p className="text-slate-400 font-medium">Fine-tune system access by enabling or disabling specific functional keys per role.</p>
+          <h1 className="page-title">Permissions</h1>
+          <p className="body-text text-[#6B7280] mt-1">
+            Configure role-based access control and system functionality.
+          </p>
         </div>
         <div className="flex items-center gap-3">
-            <button 
-                onClick={fetchData}
-                className="bg-white text-slate-600 px-5 py-3 rounded-xl font-bold flex items-center gap-2 border border-slate-200 hover:bg-slate-50 transition-all text-sm shadow-sm"
-            >
-                <RefreshCcw size={18} />
-            </button>
-            <button 
-                onClick={savePermissions}
-                disabled={saving}
-                className="bg-[#122b1c] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-900/10 hover:shadow-xl transition-all disabled:opacity-50"
-            >
-                {saving ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
-                <span>{saving ? 'Syncing...' : 'Save Configuration'}</span>
-            </button>
+          <button 
+             onClick={fetchData}
+             className="btn-secondary flex items-center gap-2"
+          >
+             <RefreshCcw size={16} />
+             <span>Sync</span>
+          </button>
+          <button 
+             onClick={savePermissions}
+             disabled={saving}
+             className="btn-primary flex items-center gap-2 disabled:opacity-50"
+          >
+             {saving ? <RefreshCcw size={16} className="animate-spin" /> : <Save size={16} />}
+             <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Role Selection Tabs */}
-      <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-fit">
-        {roles.map((role) => (
-          <button
-            key={role.id}
-            onClick={() => handleRoleSelect(role)}
-            className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
-              selectedRole?.id === role.id 
-                ? 'bg-slate-900 text-white shadow-md' 
-                : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            {selectedRole?.id === role.id ? <ShieldCheck size={14} /> : <Lock size={14} />}
-            {role.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Permission Matrix */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-         <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-            <div className="flex items-center gap-3">
-                <Zap size={18} className="text-amber-500" />
-                <h3 className="font-bold text-slate-900 uppercase tracking-widest text-xs">Functional Gates: {selectedRole?.name}</h3>
-            </div>
-         </div>
-         
-         <div className="divide-y divide-slate-50">
-            {Object.entries(groupedPermissions).map(([group, perms]) => (
-               <div key={group} className="p-10 space-y-8">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                      <ChevronRight size={12} /> {group}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                     {perms.map((perm) => {
-                        const isActive = rolePermissions.includes(perm.id);
-                        return (
-                           <div 
-                             key={perm.id} 
-                             onClick={() => togglePermission(perm.id)}
-                             className={`flex items-center justify-between p-5 rounded-[1.5rem] border transition-all cursor-pointer group ${
-                               isActive 
-                                 ? 'bg-emerald-50/30 border-emerald-100 shadow-sm' 
-                                 : 'bg-white border-slate-100 hover:border-slate-300'
-                             }`}
-                           >
-                              <div className="flex items-center gap-4">
-                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm ${
-                                   isActive 
-                                     ? 'bg-emerald-500 text-white' 
-                                     : 'bg-slate-50 text-slate-300 group-hover:text-slate-400'
-                                 }`}>
-                                    {isActive ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
-                                 </div>
-                                 <div>
-                                    <p className={`text-sm font-bold transition-colors ${isActive ? 'text-emerald-900' : 'text-slate-500'}`}>
-                                       {perm.description}
-                                    </p>
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1">{perm.key}</p>
-                                 </div>
-                              </div>
-                              <div className={`w-10 h-6 rounded-full p-1 transition-all ${isActive ? 'bg-emerald-500' : 'bg-slate-100'}`}>
-                                 <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all transform ${isActive ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                              </div>
-                           </div>
-                        );
-                     })}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Role Selection Sidebar */}
+        <div className="w-full lg:w-64 shrink-0 space-y-2">
+           <h3 className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-3 px-2">Select Role</h3>
+           <div className="flex flex-col gap-1">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleRoleSelect(role)}
+                  className={`px-4 py-3 rounded-[8px] text-[13px] font-semibold transition-all flex items-center justify-between group border ${
+                    selectedRole?.id === role.id 
+                      ? 'bg-[#166534] text-white border-[#166534] shadow-sm' 
+                      : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F8FAFC]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                     {selectedRole?.id === role.id ? <ShieldCheck size={16} /> : <Lock size={16} className="text-[#94A3B8]" />}
+                     {role.name}
                   </div>
-               </div>
-            ))}
-         </div>
+                  {selectedRole?.id === role.id && <Check size={14} />}
+                </button>
+              ))}
+           </div>
+        </div>
+
+        {/* Permission Matrix */}
+        <div className="flex-1 min-w-0">
+          <div className="enterprise-card bg-white overflow-hidden">
+             <div className="p-5 border-b border-[#E5E7EB] bg-[#F8FAFC]">
+                <h3 className="card-title text-[#111827]">
+                  Capabilities: {selectedRole?.name}
+                </h3>
+             </div>
+             
+             <div className="divide-y divide-[#E5E7EB]">
+                {Object.entries(groupedPermissions).map(([group, perms]) => (
+                   <div key={group} className="p-6">
+                      <h4 className="text-[12px] font-bold text-[#111827] uppercase tracking-wider flex items-center gap-2 mb-4">
+                          <ChevronRight size={14} className="text-[#94A3B8]" /> {group}
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                         {perms.map((perm) => {
+                            const isActive = rolePermissions.includes(perm.id);
+                            return (
+                               <div 
+                                 key={perm.id} 
+                                 onClick={() => togglePermission(perm.id)}
+                                 className={`flex items-start gap-4 p-4 rounded-[8px] border transition-all cursor-pointer ${
+                                   isActive 
+                                     ? 'bg-[#F0FDF4] border-[#166534]/30' 
+                                     : 'bg-white border-[#E2E8F0] hover:border-[#CBD5E1]'
+                                 }`}
+                               >
+                                  {/* Custom Switch */}
+                                  <div className={`mt-0.5 relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isActive ? 'bg-[#166534]' : 'bg-[#CBD5E1]'}`}>
+                                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isActive ? 'translate-x-4' : 'translate-x-0'}`} />
+                                  </div>
+
+                                  <div>
+                                     <p className={`text-[13px] font-bold leading-tight ${isActive ? 'text-[#166534]' : 'text-[#111827]'}`}>
+                                        {perm.description}
+                                     </p>
+                                     <p className="text-[11px] font-medium text-[#64748B] mt-1">{perm.key}</p>
+                                  </div>
+                               </div>
+                            );
+                         })}
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+        </div>
       </div>
     </div>
   );

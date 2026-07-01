@@ -11,5 +11,6 @@ router.post('/', validate(leadSchema), leadsController.createLead);
 router.get('/:id', leadsController.getLeadById);
 router.put('/:id', validate(leadSchema.partial()), leadsController.updateLead);
 router.put('/:id/status', leadsController.updateLeadStatus);
+router.post('/:id/activities', leadsController.addActivity);
 
 module.exports = router;
